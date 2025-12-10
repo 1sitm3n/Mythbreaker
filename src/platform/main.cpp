@@ -24,6 +24,8 @@
 #include <stdexcept>
 
 #include "../core/JobSystem.h"
+#include "../core/EventBus.h"
+#include "../core/RegionStateMachine.h"
 
 // ====================================================================================
 // Global Win32
@@ -121,7 +123,6 @@ bool g_useParallelUpdate = true;
 // Toggle to add a heavier per-instance CPU workload
 bool g_useHeavyWork = false;
 
-
 // ====================================================================================
 // Helper structs for Vulkan
 // ====================================================================================
@@ -136,9 +137,9 @@ struct QueueFamilyIndices {
 };
 
 struct SwapchainSupportDetails {
-    VkSurfaceCapabilitiesKHR      capabilities{};
+    VkSurfaceCapabilitiesKHR       capabilities{};
     std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR>  presentModes;
+    std::vector<VkPresentModeKHR>   presentModes;
 };
 
 const std::vector<const char*> DEVICE_EXTENSIONS = {
@@ -205,7 +206,73 @@ int main() {
 
         g_jobSystem = std::make_unique<JobSystem>();
 
+        // ============================================================================
+        // Event system + Region state machine test (Undying Concord prototype)
+        // ============================================================================
+
+        EventBus eventBus;
+
+        // Pretend region 1 is the Undying Concord.
+        RegionId concordId = 1;
+        RegionStateMachine concord(concordId, eventBus);
+
+        // We count how many resurrection failures have occurred in this region.
+        int failureCount = 0;
+
+        RegionStateTransition toLeaking;
+        toLeaking.from = RegionState::Normal;
+        toLeaking.to   = RegionState::LeakingFinality;
+
+        // Condition: on this region, after 3 ResurrectionFailure events, transition.
+        toLeaking.condition = [&failureCount, concordId](const Event& e) -> bool
+        {
+            if (e.type != EventType::ResurrectionFailure)
+                return false;
+
+            auto it = e.data.find("regionId");
+            if (it == e.data.end())
+                return false;
+
+            RegionId rid = static_cast<RegionId>(std::stoul(it->second));
+            if (rid != concordId)
+                return false;
+
+            failureCount++;
+            return failureCount >= 3;
+        };
+
+        toLeaking.onTransition = [](const Event&)
+        {
+            std::cout << "[Game] Undying Concord has entered LeakingFinality state.\n";
+        };
+
+        concord.addTransition(toLeaking);
+
+        // Any ResurrectionFailure event will be forwarded to the region state machine.
+        int resurrectionSubId = eventBus.subscribe(
+            EventType::ResurrectionFailure,
+            [&concord](const Event& e) {
+                concord.handleEvent(e);
+            }
+        );
+
+        // Emit three test resurrection failures to trigger the transition.
+        {
+            Event test;
+            test.type = EventType::ResurrectionFailure;
+            test.data["regionId"] = std::to_string(concordId);
+
+            // In a real game, these would be emitted over time by gameplay systems.
+            eventBus.emit(test);
+            eventBus.emit(test);
+            eventBus.emit(test);
+            // After the third one, you should see:
+            // [RegionStateMachine] Region 1 transitioned from 0 to 1
+            // [Game] Undying Concord has entered LeakingFinality state.
+        }
+
         std::cout << "Press P in the window to toggle parallel update on/off.\n";
+        std::cout << "Press H in the window to toggle heavy work mode on/off.\n";
 
         mainLoop();
 
@@ -326,11 +393,10 @@ void mainLoop() {
         }
 
         if (GetAsyncKeyState('H') & 0x0001) {
-    g_useHeavyWork = !g_useHeavyWork;
-    std::cout << "Heavy work mode toggled to: "
-              << (g_useHeavyWork ? "ON" : "OFF") << std::endl;
+            g_useHeavyWork = !g_useHeavyWork;
+            std::cout << "Heavy work mode toggled to: "
+                      << (g_useHeavyWork ? "ON" : "OFF") << std::endl;
         }
-
     }
 }
 
@@ -477,7 +543,6 @@ void updateInstances(float dt) {
 
     g_jobSystem->wait();
 }
-
 
 void updateInstanceBuffer() {
     VkDeviceSize bufferSize = sizeof(InstanceData) * g_instances.size();
@@ -727,7 +792,6 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
 
     return actual;
 }
-
 
 void createSwapchain() {
     SwapchainSupportDetails support = querySwapchainSupport(g_physicalDevice);
