@@ -23,7 +23,12 @@ const std::vector<uint32_t> indices = {0, 1, 2};
 
 class Application {
 public:
-    void run() { initWindow(); initVulkan(); mainLoop(); cleanup(); }
+    void run() { 
+        initWindow(); 
+        initVulkan(); 
+        mainLoop(); 
+        cleanup(); 
+    }
 
 private:
     GLFWwindow* m_window = nullptr;
@@ -31,14 +36,17 @@ private:
     VulkanSwapchain m_swapchain;
     DescriptorManager m_descriptors;
     VulkanPipeline m_pipeline;
-    VulkanBuffer m_vertexBuffer, m_indexBuffer;
+    VulkanBuffer m_vertexBuffer;
+    VulkanBuffer m_indexBuffer;
     std::vector<VkCommandBuffer> m_commandBuffers;
-    std::vector<VkSemaphore> m_imageAvailable, m_renderFinished;
+    std::vector<VkSemaphore> m_imageAvailable;
+    std::vector<VkSemaphore> m_renderFinished;
     std::vector<VkFence> m_inFlight;
     uint32_t m_currentFrame = 0;
     bool m_framebufferResized = false;
     glm::vec3 m_cameraPos = {0.0f, 0.0f, 3.0f};
-    float m_yaw = -90.0f, m_pitch = 0.0f;
+    float m_yaw = -90.0f;
+    float m_pitch = 0.0f;
     Timer m_timer;
     float m_logTimer = 0.0f;
 
@@ -61,6 +69,7 @@ private:
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
         m_pipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
+        
         VulkanBuffer::createWithStaging(&m_context, m_vertexBuffer, vertices.data(), sizeof(Vertex) * vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
         VulkanBuffer::createWithStaging(&m_context, m_indexBuffer, indices.data(), sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
         
@@ -75,8 +84,14 @@ private:
         m_imageAvailable.resize(MAX_FRAMES_IN_FLIGHT);
         m_renderFinished.resize(MAX_FRAMES_IN_FLIGHT);
         m_inFlight.resize(MAX_FRAMES_IN_FLIGHT);
-        VkSemaphoreCreateInfo semInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-        VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT};
+        
+        VkSemaphoreCreateInfo semInfo{};
+        semInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkCreateSemaphore(m_context.device(), &semInfo, nullptr, &m_imageAvailable[i]);
             vkCreateSemaphore(m_context.device(), &semInfo, nullptr, &m_renderFinished[i]);
@@ -104,10 +119,19 @@ private:
     void processInput() {
         auto& input = Input::instance();
         float dt = m_timer.clampedDeltaTime();
-        float speed = 5.0f * dt, rotSpeed = 90.0f * dt;
+        float speed = 5.0f * dt;
+        float rotSpeed = 90.0f * dt;
+        
         if (input.isKeyDown(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(m_window, true);
-        glm::vec3 forward = glm::normalize(glm::vec3(cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch)), sin(glm::radians(m_pitch)), sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch))));
+        
+        glm::vec3 forward;
+        forward.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        forward.y = sin(glm::radians(m_pitch));
+        forward.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        forward = glm::normalize(forward);
+        
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+        
         if (input.isKeyDown(GLFW_KEY_W)) m_cameraPos += forward * speed;
         if (input.isKeyDown(GLFW_KEY_S)) m_cameraPos -= forward * speed;
         if (input.isKeyDown(GLFW_KEY_A)) m_cameraPos -= right * speed;
@@ -120,11 +144,22 @@ private:
 
     void drawFrame() {
         vkWaitForFences(m_context.device(), 1, &m_inFlight[m_currentFrame], VK_TRUE, UINT64_MAX);
+        
         uint32_t imageIndex;
-        if (!m_swapchain.acquireNextImage(imageIndex, m_imageAvailable[m_currentFrame])) { recreateSwapchain(); return; }
+        if (!m_swapchain.acquireNextImage(imageIndex, m_imageAvailable[m_currentFrame])) {
+            recreateSwapchain();
+            return;
+        }
+        
         vkResetFences(m_context.device(), 1, &m_inFlight[m_currentFrame]);
         
-        glm::vec3 forward = glm::normalize(glm::vec3(cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch)), sin(glm::radians(m_pitch)), sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch))));
+        // Update camera
+        glm::vec3 forward;
+        forward.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        forward.y = sin(glm::radians(m_pitch));
+        forward.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        forward = glm::normalize(forward);
+        
         auto extent = m_swapchain.extent();
         CameraUBO ubo{};
         ubo.view = glm::lookAt(m_cameraPos, m_cameraPos + forward, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -135,60 +170,95 @@ private:
         ubo.time = m_timer.totalTime();
         m_descriptors.updateCameraUBO(m_currentFrame, ubo);
         
+        // Record command buffer
         auto cmd = m_commandBuffers[m_currentFrame];
         vkResetCommandBuffer(cmd, 0);
-        VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+        
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         vkBeginCommandBuffer(cmd, &beginInfo);
         
-        VkRenderPassBeginInfo rpInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+        VkRenderPassBeginInfo rpInfo{};
+        rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         rpInfo.renderPass = m_swapchain.renderPass();
         rpInfo.framebuffer = m_swapchain.framebuffer(imageIndex);
-        rpInfo.renderArea = {{0, 0}, extent};
+        rpInfo.renderArea.offset = {0, 0};
+        rpInfo.renderArea.extent = extent;
+        
         std::array<VkClearValue, 2> clearValues{};
         clearValues[0].color = {{0.02f, 0.02f, 0.05f, 1.0f}};
         clearValues[1].depthStencil = {1.0f, 0};
-        rpInfo.clearValueCount = 2;
+        rpInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         rpInfo.pClearValues = clearValues.data();
+        
         vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
         
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.pipeline());
-        VkViewport viewport{0, 0, float(extent.width), float(extent.height), 0, 1};
+        
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(extent.width);
+        viewport.height = static_cast<float>(extent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
         vkCmdSetViewport(cmd, 0, 1, &viewport);
-        VkRect2D scissor{{0, 0}, extent};
+        
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = extent;
         vkCmdSetScissor(cmd, 0, 1, &scissor);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.pipelineLayout(), 0, 1, &m_descriptors.descriptorSet(m_currentFrame), 0, nullptr);
-        VkBuffer vb[] = {m_vertexBuffer.buffer()};
+        
+        VkDescriptorSet descSet = m_descriptors.descriptorSet(m_currentFrame);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.pipelineLayout(), 0, 1, &descSet, 0, nullptr);
+        
+        VkBuffer vertexBuffers[] = {m_vertexBuffer.buffer()};
         VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(cmd, 0, 1, vb, offsets);
+        vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
         vkCmdBindIndexBuffer(cmd, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT32);
-        PushConstants push{glm::mat4(1.0f)};
-        vkCmdPushConstants(cmd, m_pipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
-        vkCmdDrawIndexed(cmd, 3, 1, 0, 0, 0);
+        
+        PushConstants push{};
+        push.model = glm::mat4(1.0f);
+        vkCmdPushConstants(cmd, m_pipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &push);
+        
+        vkCmdDrawIndexed(cmd, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        
         vkCmdEndRenderPass(cmd);
         vkEndCommandBuffer(cmd);
         
-        VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+        // Submit
+        VkSemaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame]};
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        VkSemaphore signalSemaphores[] = {m_renderFinished[m_currentFrame]};
+        
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &m_imageAvailable[m_currentFrame];
-        submitInfo.pWaitDstStageMask = &waitStage;
+        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.pWaitDstStageMask = waitStages;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &cmd;
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &m_renderFinished[m_currentFrame];
+        submitInfo.pSignalSemaphores = signalSemaphores;
+        
         vkQueueSubmit(m_context.graphicsQueue(), 1, &submitInfo, m_inFlight[m_currentFrame]);
         
+        // Present
         if (!m_swapchain.present(imageIndex, m_renderFinished[m_currentFrame]) || m_framebufferResized) {
             m_framebufferResized = false;
             recreateSwapchain();
         }
+        
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     void recreateSwapchain() {
         int w = 0, h = 0;
         glfwGetFramebufferSize(m_window, &w, &h);
-        while (w == 0 || h == 0) { glfwGetFramebufferSize(m_window, &w, &h); glfwWaitEvents(); }
+        while (w == 0 || h == 0) {
+            glfwGetFramebufferSize(m_window, &w, &h);
+            glfwWaitEvents();
+        }
         vkDeviceWaitIdle(m_context.device());
         m_swapchain.recreate();
     }
@@ -211,7 +281,12 @@ private:
 };
 
 int main() {
-    try { Application app; app.run(); }
-    catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
+    try {
+        Application app;
+        app.run();
+    } catch (const std::exception& e) {
+        Logger::fatal(e.what());
+        return 1;
+    }
     return 0;
 }

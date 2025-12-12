@@ -73,9 +73,9 @@ events:
       The output was:
       0
       MSBuild version 17.14.10+8b8e13593 for .NET Framework
-      Build started 09/12/2025 23:52:51.
+      Build started 12/12/2025 22:37:14.
       
-      Project "C:\\Users\\memet\\Desktop\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" on node 1 (default targets).
+      Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" on node 1 (default targets).
       PrepareForBuild:
         Creating directory "Debug\\".
         Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
@@ -88,7 +88,7 @@ events:
         CMakeCXXCompilerId.cpp
       Link:
         C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCXX.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCXX.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCXX.lib" /MACHINE:X64 Debug\\CMakeCXXCompilerId.obj
-        CompilerIdCXX.vcxproj -> C:\\Users\\memet\\Desktop\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdCXX\\CompilerIdCXX.exe
+        CompilerIdCXX.vcxproj -> C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdCXX\\CompilerIdCXX.exe
       PostBuildEvent:
         for %%i in (cl.exe) do @echo CMAKE_CXX_COMPILER=%%~$PATH:i
         :VCEnd
@@ -96,13 +96,13 @@ events:
       FinalizeBuildStatus:
         Deleting file "Debug\\CompilerIdCXX.tlog\\unsuccessfulbuild".
         Touching "Debug\\CompilerIdCXX.tlog\\CompilerIdCXX.lastbuildstate".
-      Done Building Project "C:\\Users\\memet\\Desktop\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" (default targets).
+      Done Building Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdCXX\\CompilerIdCXX.vcxproj" (default targets).
       
       Build succeeded.
           0 Warning(s)
           0 Error(s)
       
-      Time Elapsed 00:00:00.40
+      Time Elapsed 00:00:00.39
       
       
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -110,7 +110,7 @@ events:
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.vcxproj"
       
       The CXX compiler identification is MSVC, found in:
-        C:/Users/memet/Desktop/Mythbreaker/build/CMakeFiles/4.2.0/CompilerIdCXX/CompilerIdCXX.exe
+        C:/Projects/Mythbreaker/build/CMakeFiles/4.2.0/CompilerIdCXX/CompilerIdCXX.exe
       
   -
     kind: "find-v1"
@@ -727,8 +727,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/Users/memet/Desktop/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-lwip00"
-      binary: "C:/Users/memet/Desktop/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-lwip00"
+      source: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-je6efk"
+      binary: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-je6efk"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
@@ -738,39 +738,39 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/memet/Desktop/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-lwip00'
+        Change Dir: 'C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-je6efk'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_8cb2e.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_38adb.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.14.10+8b8e13593 for .NET Framework
-        Build started 09/12/2025 23:52:52.
+        Build started 12/12/2025 22:37:15.
         
-        Project "C:\\Users\\memet\\Desktop\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-lwip00\\cmTC_8cb2e.vcxproj" on node 1 (default targets).
+        Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-je6efk\\cmTC_38adb.vcxproj" on node 1 (default targets).
         PrepareForBuild:
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\memet\\Desktop\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-lwip00\\Debug\\".
-          Creating directory "cmTC_8cb2e.dir\\Debug\\cmTC_8cb2e.tlog\\".
+          Creating directory "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-je6efk\\Debug\\".
+          Creating directory "cmTC_38adb.dir\\Debug\\cmTC_38adb.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_8cb2e.dir\\Debug\\cmTC_8cb2e.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_8cb2e.dir\\Debug\\cmTC_8cb2e.tlog\\unsuccessfulbuild".
+          Creating "cmTC_38adb.dir\\Debug\\cmTC_38adb.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_38adb.dir\\Debug\\cmTC_38adb.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /Fo"cmTC_8cb2e.dir\\Debug\\\\" /Fd"cmTC_8cb2e.dir\\Debug\\vc143.pdb" /external:W1 /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.2\\Modules\\CMakeCXXCompilerABI.cpp"
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /Fo"cmTC_38adb.dir\\Debug\\\\" /Fd"cmTC_38adb.dir\\Debug\\vc143.pdb" /external:W1 /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.2\\Modules\\CMakeCXXCompilerABI.cpp"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /Fo"cmTC_8cb2e.dir\\Debug\\\\" /Fd"cmTC_8cb2e.dir\\Debug\\vc143.pdb" /external:W1 /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.2\\Modules\\CMakeCXXCompilerABI.cpp"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /Fo"cmTC_38adb.dir\\Debug\\\\" /Fd"cmTC_38adb.dir\\Debug\\vc143.pdb" /external:W1 /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.2\\Modules\\CMakeCXXCompilerABI.cpp"
           CMakeCXXCompilerABI.cpp
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Users\\memet\\Desktop\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-lwip00\\Debug\\cmTC_8cb2e.exe" /INCREMENTAL /ILK:"cmTC_8cb2e.dir\\Debug\\cmTC_8cb2e.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/memet/Desktop/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-lwip00/Debug/cmTC_8cb2e.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Users/memet/Desktop/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-lwip00/Debug/cmTC_8cb2e.lib" /MACHINE:X64  /machine:x64 cmTC_8cb2e.dir\\Debug\\CMakeCXXCompilerABI.obj
-          cmTC_8cb2e.vcxproj -> C:\\Users\\memet\\Desktop\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-lwip00\\Debug\\cmTC_8cb2e.exe
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-je6efk\\Debug\\cmTC_38adb.exe" /INCREMENTAL /ILK:"cmTC_38adb.dir\\Debug\\cmTC_38adb.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-je6efk/Debug/cmTC_38adb.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-je6efk/Debug/cmTC_38adb.lib" /MACHINE:X64  /machine:x64 cmTC_38adb.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_38adb.vcxproj -> C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-je6efk\\Debug\\cmTC_38adb.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_8cb2e.dir\\Debug\\cmTC_8cb2e.tlog\\unsuccessfulbuild".
-          Touching "cmTC_8cb2e.dir\\Debug\\cmTC_8cb2e.tlog\\cmTC_8cb2e.lastbuildstate".
-        Done Building Project "C:\\Users\\memet\\Desktop\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-lwip00\\cmTC_8cb2e.vcxproj" (default targets).
+          Deleting file "cmTC_38adb.dir\\Debug\\cmTC_38adb.tlog\\unsuccessfulbuild".
+          Touching "cmTC_38adb.dir\\Debug\\cmTC_38adb.tlog\\cmTC_38adb.lastbuildstate".
+        Done Building Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-je6efk\\cmTC_38adb.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
             0 Error(s)
         
-        Time Elapsed 00:00:00.38
+        Time Elapsed 00:00:00.39
         
       exitCode: 0
   -
@@ -801,4 +801,946 @@ events:
       Running the CXX compiler's linker: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64/link.exe" "-v"
       Microsoft (R) Incremental Linker Version 14.44.35209.0
       Copyright (C) Microsoft Corporation.  All rights reserved.
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindVulkan.cmake:392 (find_path)"
+      - "CMakeLists.txt:15 (find_package)"
+    mode: "path"
+    variable: "Vulkan_INCLUDE_DIR"
+    description: "Path to a file."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "vulkan/vulkan.h"
+    candidate_directories:
+      - "C:/VulkanSDK/1.4.328.1/include/"
+      - "C:/VulkanSDK/1.4.328.1/Bin/"
+      - "C:/WINDOWS/System32/"
+      - "C:/WINDOWS/"
+      - "C:/WINDOWS/System32/wbem/"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "C:/WINDOWS/System32/OpenSSH/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/memet/.dotnet/tools/"
+      - "C:/Program Files/include/"
+      - "C:/Program Files/"
+      - "C:/Program Files (x86)/include/"
+      - "C:/Program Files (x86)/"
+      - "C:/Program Files/CMake/include/"
+      - "C:/Program Files/CMake/"
+      - "C:/Program Files (x86)/Mythbreaker/include/"
+      - "C:/Program Files (x86)/Mythbreaker/"
+    found: "C:/VulkanSDK/1.4.328.1/include/"
+    search_context:
+      ENV{PATH}:
+        - "C:\\VulkanSDK\\1.4.328.1\\Bin"
+        - "C:\\windows\\system32"
+        - "C:\\windows"
+        - "C:\\windows\\System32\\Wbem"
+        - "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\"
+        - "C:\\Program Files\\dotnet\\"
+        - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\CMake\\bin"
+        - "C:\\Users\\memet\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\memet\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\memet\\.dotnet\\tools"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/Mythbreaker"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/Program Files/CMake"
+        - "C:/Program Files (x86)/Mythbreaker"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindVulkan.cmake:399 (find_library)"
+      - "CMakeLists.txt:15 (find_package)"
+    mode: "library"
+    variable: "Vulkan_LIBRARY"
+    description: "Path to a library."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "vulkan-1"
+    candidate_directories:
+      - "C:/VulkanSDK/1.4.328.1/lib/"
+      - "C:/VulkanSDK/1.4.328.1/bin/"
+      - "C:/VulkanSDK/1.4.328.1/Bin/"
+      - "C:/WINDOWS/System32/"
+      - "C:/WINDOWS/"
+      - "C:/WINDOWS/System32/wbem/"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "C:/WINDOWS/System32/OpenSSH/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/memet/.dotnet/tools/"
+      - "C:/Program Files/lib/"
+      - "C:/Program Files/"
+      - "C:/Program Files (x86)/lib/"
+      - "C:/Program Files (x86)/"
+      - "C:/Program Files/CMake/lib/"
+      - "C:/Program Files/CMake/"
+      - "C:/Program Files (x86)/Mythbreaker/lib/"
+      - "C:/Program Files (x86)/Mythbreaker/"
+      - "C:/Program Files (x86)/Mythbreaker/bin/"
+      - "/bin/"
+    found: "C:/VulkanSDK/1.4.328.1/Lib/vulkan-1.lib"
+    search_context:
+      ENV{PATH}:
+        - "C:\\VulkanSDK\\1.4.328.1\\Bin"
+        - "C:\\windows\\system32"
+        - "C:\\windows"
+        - "C:\\windows\\System32\\Wbem"
+        - "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\"
+        - "C:\\Program Files\\dotnet\\"
+        - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\CMake\\bin"
+        - "C:\\Users\\memet\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\memet\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\memet\\.dotnet\\tools"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/Mythbreaker"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/Program Files/CMake"
+        - "C:/Program Files (x86)/Mythbreaker"
+      CMAKE_SYSTEM_LIBRARY_PATH:
+        - "C:/Program Files (x86)/Mythbreaker/bin"
+        - "C:/Program Files/CMake/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindVulkan.cmake:407 (find_program)"
+      - "CMakeLists.txt:15 (find_package)"
+    mode: "program"
+    variable: "Vulkan_GLSLC_EXECUTABLE"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "glslc"
+    candidate_directories:
+      - "C:/VulkanSDK/1.4.328.1/bin/"
+      - "C:/VulkanSDK/1.4.328.1/Bin/"
+      - "C:/WINDOWS/System32/"
+      - "C:/WINDOWS/"
+      - "C:/WINDOWS/System32/wbem/"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "C:/WINDOWS/System32/OpenSSH/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/memet/.dotnet/tools/"
+      - "C:/Program Files/bin/"
+      - "C:/Program Files/sbin/"
+      - "C:/Program Files/"
+      - "C:/Program Files (x86)/bin/"
+      - "C:/Program Files (x86)/sbin/"
+      - "C:/Program Files (x86)/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Program Files/CMake/sbin/"
+      - "C:/Program Files/CMake/"
+      - "C:/Program Files (x86)/Mythbreaker/bin/"
+      - "C:/Program Files (x86)/Mythbreaker/sbin/"
+      - "C:/Program Files (x86)/Mythbreaker/"
+    searched_directories:
+      - "C:/VulkanSDK/1.4.328.1/bin/glslc.com"
+    found: "C:/VulkanSDK/1.4.328.1/Bin/glslc.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:\\VulkanSDK\\1.4.328.1\\Bin"
+        - "C:\\windows\\system32"
+        - "C:\\windows"
+        - "C:\\windows\\System32\\Wbem"
+        - "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\"
+        - "C:\\Program Files\\dotnet\\"
+        - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\CMake\\bin"
+        - "C:\\Users\\memet\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\memet\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\memet\\.dotnet\\tools"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/Mythbreaker"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/Program Files/CMake"
+        - "C:/Program Files (x86)/Mythbreaker"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindVulkan.cmake:415 (find_program)"
+      - "CMakeLists.txt:15 (find_package)"
+    mode: "program"
+    variable: "Vulkan_GLSLANG_VALIDATOR_EXECUTABLE"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "glslangValidator"
+    candidate_directories:
+      - "C:/VulkanSDK/1.4.328.1/bin/"
+      - "C:/VulkanSDK/1.4.328.1/Bin/"
+      - "C:/WINDOWS/System32/"
+      - "C:/WINDOWS/"
+      - "C:/WINDOWS/System32/wbem/"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "C:/WINDOWS/System32/OpenSSH/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/memet/.dotnet/tools/"
+      - "C:/Program Files/bin/"
+      - "C:/Program Files/sbin/"
+      - "C:/Program Files/"
+      - "C:/Program Files (x86)/bin/"
+      - "C:/Program Files (x86)/sbin/"
+      - "C:/Program Files (x86)/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Program Files/CMake/sbin/"
+      - "C:/Program Files/CMake/"
+      - "C:/Program Files (x86)/Mythbreaker/bin/"
+      - "C:/Program Files (x86)/Mythbreaker/sbin/"
+      - "C:/Program Files (x86)/Mythbreaker/"
+    searched_directories:
+      - "C:/VulkanSDK/1.4.328.1/bin/glslangValidator.com"
+    found: "C:/VulkanSDK/1.4.328.1/Bin/glslangValidator.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:\\VulkanSDK\\1.4.328.1\\Bin"
+        - "C:\\windows\\system32"
+        - "C:\\windows"
+        - "C:\\windows\\System32\\Wbem"
+        - "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\"
+        - "C:\\Program Files\\dotnet\\"
+        - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\CMake\\bin"
+        - "C:\\Users\\memet\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\memet\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\memet\\.dotnet\\tools"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/Mythbreaker"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/Program Files/CMake"
+        - "C:/Program Files (x86)/Mythbreaker"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "CMakeLists.txt:18 (find_program)"
+    mode: "program"
+    variable: "GLSLC_EXECUTABLE"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "glslc"
+    candidate_directories:
+      - "C:/VulkanSDK/1.4.328.1/Bin/"
+      - "C:/WINDOWS/System32/"
+      - "C:/WINDOWS/"
+      - "C:/WINDOWS/System32/wbem/"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "C:/WINDOWS/System32/OpenSSH/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/memet/.dotnet/tools/"
+      - "C:/Program Files/bin/"
+      - "C:/Program Files/sbin/"
+      - "C:/Program Files/"
+      - "C:/Program Files (x86)/bin/"
+      - "C:/Program Files (x86)/sbin/"
+      - "C:/Program Files (x86)/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Program Files/CMake/sbin/"
+      - "C:/Program Files/CMake/"
+      - "C:/Program Files (x86)/Mythbreaker/bin/"
+      - "C:/Program Files (x86)/Mythbreaker/sbin/"
+      - "C:/Program Files (x86)/Mythbreaker/"
+    searched_directories:
+      - "C:/VulkanSDK/1.4.328.1/Bin/glslc.com"
+    found: "C:/VulkanSDK/1.4.328.1/Bin/glslc.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:\\VulkanSDK\\1.4.328.1\\Bin"
+        - "C:\\windows\\system32"
+        - "C:\\windows"
+        - "C:\\windows\\System32\\Wbem"
+        - "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\"
+        - "C:\\Program Files\\dotnet\\"
+        - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\CMake\\bin"
+        - "C:\\Users\\memet\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\memet\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\memet\\.dotnet\\tools"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/Mythbreaker"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/Program Files/CMake"
+        - "C:/Program Files (x86)/Mythbreaker"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerId.cmake:462 (find_file)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerId.cmake:500 (CMAKE_DETERMINE_COMPILER_ID_WRITE)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerId.cmake:8 (CMAKE_DETERMINE_COMPILER_ID_BUILD)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCCompiler.cmake:122 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "third_party/glfw/CMakeLists.txt:3 (project)"
+    mode: "file"
+    variable: "src_in"
+    description: "Path to a file."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "CMakeCCompilerId.c.in"
+    candidate_directories:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/"
+    found: "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeCCompilerId.c.in"
+    search_context:
+      ENV{PATH}:
+        - "C:\\VulkanSDK\\1.4.328.1\\Bin"
+        - "C:\\windows\\system32"
+        - "C:\\windows"
+        - "C:\\windows\\System32\\Wbem"
+        - "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\"
+        - "C:\\Program Files\\dotnet\\"
+        - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\CMake\\bin"
+        - "C:\\Users\\memet\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\memet\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\memet\\.dotnet\\tools"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/Mythbreaker"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/Program Files/CMake"
+        - "C:/Program Files (x86)/Mythbreaker"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCCompiler.cmake:122 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "third_party/glfw/CMakeLists.txt:3 (project)"
+    message: |
+      Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+      Compiler:  
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      MSBuild version 17.14.10+8b8e13593 for .NET Framework
+      Build started 12/12/2025 22:37:15.
+      
+      Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdC\\CompilerIdC.vcxproj" on node 1 (default targets).
+      PrepareForBuild:
+        Creating directory "Debug\\".
+        Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+        Creating directory "Debug\\CompilerIdC.tlog\\".
+      InitializeBuildStatus:
+        Creating "Debug\\CompilerIdC.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+        Touching "Debug\\CompilerIdC.tlog\\unsuccessfulbuild".
+      ClCompile:
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc143.pdb" /external:W0 /Gd /TC /FC /errorReport:queue CMakeCCompilerId.c
+        CMakeCCompilerId.c
+      Link:
+        C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdC.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdC.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdC.lib" /MACHINE:X64 Debug\\CMakeCCompilerId.obj
+        CompilerIdC.vcxproj -> C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdC\\CompilerIdC.exe
+      PostBuildEvent:
+        for %%i in (cl.exe) do @echo CMAKE_C_COMPILER=%%~$PATH:i
+        :VCEnd
+        CMAKE_C_COMPILER=C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe
+      FinalizeBuildStatus:
+        Deleting file "Debug\\CompilerIdC.tlog\\unsuccessfulbuild".
+        Touching "Debug\\CompilerIdC.tlog\\CompilerIdC.lastbuildstate".
+      Done Building Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\4.2.0\\CompilerIdC\\CompilerIdC.vcxproj" (default targets).
+      
+      Build succeeded.
+          0 Warning(s)
+          0 Error(s)
+      
+      Time Elapsed 00:00:00.38
+      
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.vcxproj"
+      
+      The C compiler identification is MSVC, found in:
+        C:/Projects/Mythbreaker/build/CMakeFiles/4.2.0/CompilerIdC/CompilerIdC.exe
+      
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeFindBinUtils.cmake:37 (find_program)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeFindBinUtils.cmake:65 (__resolve_tool_path)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeFindBinUtils.cmake:104 (__resolve_linker_path)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "third_party/glfw/CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "_CMAKE_TOOL_WITH_PATH"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "lld-link"
+    candidate_directories:
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/"
+      - "C:/VulkanSDK/1.4.328.1/Bin/"
+      - "C:/WINDOWS/System32/"
+      - "C:/WINDOWS/"
+      - "C:/WINDOWS/System32/wbem/"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+      - "C:/WINDOWS/System32/OpenSSH/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/memet/.dotnet/tools/"
+      - "C:/Program Files/bin/"
+      - "C:/Program Files/sbin/"
+      - "C:/Program Files/"
+      - "C:/Program Files (x86)/bin/"
+      - "C:/Program Files (x86)/sbin/"
+      - "C:/Program Files (x86)/"
+      - "C:/Program Files/CMake/bin/"
+      - "C:/Program Files/CMake/sbin/"
+      - "C:/Program Files/CMake/"
+      - "C:/Program Files (x86)/Mythbreaker/bin/"
+      - "C:/Program Files (x86)/Mythbreaker/sbin/"
+      - "C:/Program Files (x86)/Mythbreaker/"
+    searched_directories:
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link.com"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link.exe"
+      - "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/lld-link"
+      - "C:/VulkanSDK/1.4.328.1/Bin/lld-link.com"
+      - "C:/VulkanSDK/1.4.328.1/Bin/lld-link.exe"
+      - "C:/VulkanSDK/1.4.328.1/Bin/lld-link"
+      - "C:/WINDOWS/System32/lld-link.com"
+      - "C:/WINDOWS/System32/lld-link.exe"
+      - "C:/WINDOWS/System32/lld-link"
+      - "C:/WINDOWS/lld-link.com"
+      - "C:/WINDOWS/lld-link.exe"
+      - "C:/WINDOWS/lld-link"
+      - "C:/WINDOWS/System32/wbem/lld-link.com"
+      - "C:/WINDOWS/System32/wbem/lld-link.exe"
+      - "C:/WINDOWS/System32/wbem/lld-link"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/lld-link.com"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/lld-link.exe"
+      - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/lld-link"
+      - "C:/WINDOWS/System32/OpenSSH/lld-link.com"
+      - "C:/WINDOWS/System32/OpenSSH/lld-link.exe"
+      - "C:/WINDOWS/System32/OpenSSH/lld-link"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/lld-link"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/lld-link.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/lld-link.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA NvDLISR/lld-link"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/lld-link.com"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/lld-link.exe"
+      - "C:/Program Files/Microsoft SQL Server/150/Tools/Binn/lld-link"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/lld-link.com"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/lld-link.exe"
+      - "C:/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/lld-link"
+      - "C:/Program Files/dotnet/lld-link.com"
+      - "C:/Program Files/dotnet/lld-link.exe"
+      - "C:/Program Files/dotnet/lld-link"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link.com"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link.exe"
+      - "C:/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit/lld-link"
+      - "C:/Program Files/Git/cmd/lld-link.com"
+      - "C:/Program Files/Git/cmd/lld-link.exe"
+      - "C:/Program Files/Git/cmd/lld-link"
+      - "C:/Program Files/CMake/bin/lld-link.com"
+      - "C:/Program Files/CMake/bin/lld-link.exe"
+      - "C:/Program Files/CMake/bin/lld-link"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/lld-link.com"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/lld-link.exe"
+      - "C:/Users/memet/AppData/Local/Microsoft/WindowsApps/lld-link"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.com"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/lld-link.exe"
+      - "C:/Users/memet/AppData/Local/Programs/Microsoft VS Code/bin/lld-link"
+      - "C:/Users/memet/.dotnet/tools/lld-link.com"
+      - "C:/Users/memet/.dotnet/tools/lld-link.exe"
+      - "C:/Users/memet/.dotnet/tools/lld-link"
+      - "C:/Program Files/bin/lld-link.com"
+      - "C:/Program Files/bin/lld-link.exe"
+      - "C:/Program Files/bin/lld-link"
+      - "C:/Program Files/sbin/lld-link.com"
+      - "C:/Program Files/sbin/lld-link.exe"
+      - "C:/Program Files/sbin/lld-link"
+      - "C:/Program Files/lld-link.com"
+      - "C:/Program Files/lld-link.exe"
+      - "C:/Program Files/lld-link"
+      - "C:/Program Files (x86)/bin/lld-link.com"
+      - "C:/Program Files (x86)/bin/lld-link.exe"
+      - "C:/Program Files (x86)/bin/lld-link"
+      - "C:/Program Files (x86)/sbin/lld-link.com"
+      - "C:/Program Files (x86)/sbin/lld-link.exe"
+      - "C:/Program Files (x86)/sbin/lld-link"
+      - "C:/Program Files (x86)/lld-link.com"
+      - "C:/Program Files (x86)/lld-link.exe"
+      - "C:/Program Files (x86)/lld-link"
+      - "C:/Program Files/CMake/bin/lld-link.com"
+      - "C:/Program Files/CMake/bin/lld-link.exe"
+      - "C:/Program Files/CMake/bin/lld-link"
+      - "C:/Program Files/CMake/sbin/lld-link.com"
+      - "C:/Program Files/CMake/sbin/lld-link.exe"
+      - "C:/Program Files/CMake/sbin/lld-link"
+      - "C:/Program Files/CMake/lld-link.com"
+      - "C:/Program Files/CMake/lld-link.exe"
+      - "C:/Program Files/CMake/lld-link"
+      - "C:/Program Files (x86)/Mythbreaker/bin/lld-link.com"
+      - "C:/Program Files (x86)/Mythbreaker/bin/lld-link.exe"
+      - "C:/Program Files (x86)/Mythbreaker/bin/lld-link"
+      - "C:/Program Files (x86)/Mythbreaker/sbin/lld-link.com"
+      - "C:/Program Files (x86)/Mythbreaker/sbin/lld-link.exe"
+      - "C:/Program Files (x86)/Mythbreaker/sbin/lld-link"
+      - "C:/Program Files (x86)/Mythbreaker/lld-link.com"
+      - "C:/Program Files (x86)/Mythbreaker/lld-link.exe"
+      - "C:/Program Files (x86)/Mythbreaker/lld-link"
+    found: false
+    search_context:
+      ENV{PATH}:
+        - "C:\\VulkanSDK\\1.4.328.1\\Bin"
+        - "C:\\windows\\system32"
+        - "C:\\windows"
+        - "C:\\windows\\System32\\Wbem"
+        - "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\windows\\System32\\OpenSSH\\"
+        - "C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common"
+        - "C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\"
+        - "C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn\\"
+        - "C:\\Program Files\\dotnet\\"
+        - "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\CMake\\bin"
+        - "C:\\Users\\memet\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\memet\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\memet\\.dotnet\\tools"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/Mythbreaker"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/Program Files/CMake"
+        - "C:/Program Files (x86)/Mythbreaker"
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerABI.cmake:83 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "third_party/glfw/CMakeLists.txt:3 (project)"
+    checks:
+      - "Detecting C compiler ABI info"
+    directories:
+      source: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-4amssw"
+      binary: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-4amssw"
+    cmakeVariables:
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+    buildResult:
+      variable: "CMAKE_C_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-4amssw'
+        
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_5374f.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 12/12/2025 22:37:16.
+        
+        Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4amssw\\cmTC_5374f.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+          Creating directory "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4amssw\\Debug\\".
+          Creating directory "cmTC_5374f.dir\\Debug\\cmTC_5374f.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_5374f.dir\\Debug\\cmTC_5374f.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_5374f.dir\\Debug\\cmTC_5374f.tlog\\unsuccessfulbuild".
+        ClCompile:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /Fo"cmTC_5374f.dir\\Debug\\\\" /Fd"cmTC_5374f.dir\\Debug\\vc143.pdb" /external:W1 /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.2\\Modules\\CMakeCCompilerABI.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
+          Copyright (C) Microsoft Corporation.  All rights reserved.
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /Fo"cmTC_5374f.dir\\Debug\\\\" /Fd"cmTC_5374f.dir\\Debug\\vc143.pdb" /external:W1 /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-4.2\\Modules\\CMakeCCompilerABI.c"
+          CMakeCCompilerABI.c
+        Link:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4amssw\\Debug\\cmTC_5374f.exe" /INCREMENTAL /ILK:"cmTC_5374f.dir\\Debug\\cmTC_5374f.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-4amssw/Debug/cmTC_5374f.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-4amssw/Debug/cmTC_5374f.lib" /MACHINE:X64  /machine:x64 cmTC_5374f.dir\\Debug\\CMakeCCompilerABI.obj
+          cmTC_5374f.vcxproj -> C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4amssw\\Debug\\cmTC_5374f.exe
+        FinalizeBuildStatus:
+          Deleting file "cmTC_5374f.dir\\Debug\\cmTC_5374f.tlog\\unsuccessfulbuild".
+          Touching "cmTC_5374f.dir\\Debug\\cmTC_5374f.tlog\\cmTC_5374f.lastbuildstate".
+        Done Building Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4amssw\\cmTC_5374f.vcxproj" (default targets).
+        
+        Build succeeded.
+            0 Warning(s)
+            0 Error(s)
+        
+        Time Elapsed 00:00:00.36
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerABI.cmake:253 (message)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "third_party/glfw/CMakeLists.txt:3 (project)"
+    message: |
+      Parsed C implicit link information:
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|link\\.exe|lld-link(\\.exe)?))("|,| |$)]
+        linker tool for 'C': C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64/link.exe
+        implicit libs: []
+        implicit objs: []
+        implicit dirs: []
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/Internal/CMakeDetermineLinkerId.cmake:38 (message)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeDetermineCompilerABI.cmake:299 (cmake_determine_linker_id)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "third_party/glfw/CMakeLists.txt:3 (project)"
+    message: |
+      Running the C compiler's linker: "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64/link.exe" "-v"
+      Microsoft (R) Incremental Linker Version 14.44.35209.0
+      Copyright (C) Microsoft Corporation.  All rights reserved.
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/Internal/CheckSourceCompiles.cmake:104 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CheckCSourceCompiles.cmake:103 (cmake_check_source_compiles)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindThreads.cmake:160 (check_c_source_compiles)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindThreads.cmake:226 (_threads_check_libc)"
+      - "third_party/glfw/CMakeLists.txt:60 (find_package)"
+    checks:
+      - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
+    directories:
+      source: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-d7ehs2"
+      binary: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-d7ehs2"
+    cmakeVariables:
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/Projects/Mythbreaker/third_party/glfw/CMake/modules"
+    buildResult:
+      variable: "CMAKE_HAVE_LIBC_PTHREAD"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-d7ehs2'
+        
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_e6911.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 12/12/2025 22:37:17.
+        
+        Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\cmTC_e6911.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+          Creating directory "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\Debug\\".
+          Creating directory "cmTC_e6911.dir\\Debug\\cmTC_e6911.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_e6911.dir\\Debug\\cmTC_e6911.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_e6911.dir\\Debug\\cmTC_e6911.tlog\\unsuccessfulbuild".
+        ClCompile:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /Fo"cmTC_e6911.dir\\Debug\\\\" /Fd"cmTC_e6911.dir\\Debug\\vc143.pdb" /external:W1 /TC /errorReport:queue "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\src.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
+          Copyright (C) Microsoft Corporation.  All rights reserved.
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /Fo"cmTC_e6911.dir\\Debug\\\\" /Fd"cmTC_e6911.dir\\Debug\\vc143.pdb" /external:W1 /TC /errorReport:queue "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\src.c"
+          src.c
+        C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\cmTC_e6911.vcxproj]
+        Done Building Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\cmTC_e6911.vcxproj" (default targets) -- FAILED.
+        
+        Build FAILED.
+        
+        "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\cmTC_e6911.vcxproj" (default target) (1) ->
+        (ClCompile target) -> 
+          C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-d7ehs2\\cmTC_e6911.vcxproj]
+        
+            0 Warning(s)
+            1 Error(s)
+        
+        Time Elapsed 00:00:00.22
+        
+      exitCode: 1
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CheckLibraryExists.cmake:154 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindThreads.cmake:175 (check_library_exists)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindThreads.cmake:238 (_threads_check_lib)"
+      - "third_party/glfw/CMakeLists.txt:60 (find_package)"
+    checks:
+      - "Looking for pthread_create in pthreads"
+    directories:
+      source: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-jpcc4t"
+      binary: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-jpcc4t"
+    cmakeVariables:
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/Projects/Mythbreaker/third_party/glfw/CMake/modules"
+    buildResult:
+      variable: "CMAKE_HAVE_PTHREADS_CREATE"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-jpcc4t'
+        
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_edd02.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 12/12/2025 22:37:17.
+        
+        Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\cmTC_edd02.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+          Creating directory "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\Debug\\".
+          Creating directory "cmTC_edd02.dir\\Debug\\cmTC_edd02.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_edd02.dir\\Debug\\cmTC_edd02.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_edd02.dir\\Debug\\cmTC_edd02.tlog\\unsuccessfulbuild".
+        ClCompile:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /Fo"cmTC_edd02.dir\\Debug\\\\" /Fd"cmTC_edd02.dir\\Debug\\vc143.pdb" /external:W1 /TC /errorReport:queue "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\CheckFunctionExists.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
+          Copyright (C) Microsoft Corporation.  All rights reserved.
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /Fo"cmTC_edd02.dir\\Debug\\\\" /Fd"cmTC_edd02.dir\\Debug\\vc143.pdb" /external:W1 /TC /errorReport:queue "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\CheckFunctionExists.c"
+          CheckFunctionExists.c
+        Link:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\Debug\\cmTC_edd02.exe" /INCREMENTAL /ILK:"cmTC_edd02.dir\\Debug\\cmTC_edd02.ilk" /NOLOGO pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-jpcc4t/Debug/cmTC_edd02.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-jpcc4t/Debug/cmTC_edd02.lib" /MACHINE:X64  /machine:x64 cmTC_edd02.dir\\Debug\\CheckFunctionExists.obj
+        LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\cmTC_edd02.vcxproj]
+        Done Building Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\cmTC_edd02.vcxproj" (default targets) -- FAILED.
+        
+        Build FAILED.
+        
+        "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\cmTC_edd02.vcxproj" (default target) (1) ->
+        (Link target) -> 
+          LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-jpcc4t\\cmTC_edd02.vcxproj]
+        
+            0 Warning(s)
+            1 Error(s)
+        
+        Time Elapsed 00:00:00.28
+        
+      exitCode: 1
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/CheckLibraryExists.cmake:154 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindThreads.cmake:175 (check_library_exists)"
+      - "C:/Program Files/CMake/share/cmake-4.2/Modules/FindThreads.cmake:239 (_threads_check_lib)"
+      - "third_party/glfw/CMakeLists.txt:60 (find_package)"
+    checks:
+      - "Looking for pthread_create in pthread"
+    directories:
+      source: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-z74rzx"
+      binary: "C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-z74rzx"
+    cmakeVariables:
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/Projects/Mythbreaker/third_party/glfw/CMake/modules"
+    buildResult:
+      variable: "CMAKE_HAVE_PTHREAD_CREATE"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-z74rzx'
+        
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_55507.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.14.10+8b8e13593 for .NET Framework
+        Build started 12/12/2025 22:37:17.
+        
+        Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\cmTC_55507.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+          Creating directory "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\Debug\\".
+          Creating directory "cmTC_55507.dir\\Debug\\cmTC_55507.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_55507.dir\\Debug\\cmTC_55507.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_55507.dir\\Debug\\cmTC_55507.tlog\\unsuccessfulbuild".
+        ClCompile:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /Fo"cmTC_55507.dir\\Debug\\\\" /Fd"cmTC_55507.dir\\Debug\\vc143.pdb" /external:W1 /TC /errorReport:queue "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\CheckFunctionExists.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35209 for x64
+          Copyright (C) Microsoft Corporation.  All rights reserved.
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D _MBCS /D "CMAKE_INTDIR=\\"Debug\\"" /RTC1 /MDd /Fo"cmTC_55507.dir\\Debug\\\\" /Fd"cmTC_55507.dir\\Debug\\vc143.pdb" /external:W1 /TC /errorReport:queue "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\CheckFunctionExists.c"
+          CheckFunctionExists.c
+        Link:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe /OUT:"C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\Debug\\cmTC_55507.exe" /INCREMENTAL /ILK:"cmTC_55507.dir\\Debug\\cmTC_55507.ilk" /NOLOGO pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-z74rzx/Debug/cmTC_55507.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /IMPLIB:"C:/Projects/Mythbreaker/build/CMakeFiles/CMakeScratch/TryCompile-z74rzx/Debug/cmTC_55507.lib" /MACHINE:X64  /machine:x64 cmTC_55507.dir\\Debug\\CheckFunctionExists.obj
+        LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\cmTC_55507.vcxproj]
+        Done Building Project "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\cmTC_55507.vcxproj" (default targets) -- FAILED.
+        
+        Build FAILED.
+        
+        "C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\cmTC_55507.vcxproj" (default target) (1) ->
+        (Link target) -> 
+          LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Projects\\Mythbreaker\\build\\CMakeFiles\\CMakeScratch\\TryCompile-z74rzx\\cmTC_55507.vcxproj]
+        
+            0 Warning(s)
+            1 Error(s)
+        
+        Time Elapsed 00:00:00.30
+        
+      exitCode: 1
 ...
