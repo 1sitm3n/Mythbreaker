@@ -1,6 +1,7 @@
 ﻿#include "engine/Logger.h"
 #include "engine/Timer.h"
 #include "engine/Input.h"
+#include "engine/RegionState.h"
 #include "engine/ecs/World.h"
 #include "engine/ecs/Systems.h"
 #include "engine/vulkan/VulkanContext.h"
@@ -18,7 +19,7 @@ using namespace myth;
 using namespace myth::vk;
 using namespace myth::ecs;
 
-// Chunk system (kept from M5)
+// Chunk system
 struct ChunkCoord {
     int x, z;
     bool operator==(const ChunkCoord& other) const { return x == other.x && z == other.z; }
@@ -39,12 +40,15 @@ struct Chunk {
     ChunkCoord coord;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
+    glm::vec3 baseColor;
     
-    void generate(float chunkSize) {
+    void generate(float chunkSize, float colorMult = 1.0f) {
         float baseHeight = chunkRandom(coord.x, coord.z, 0) * 0.3f;
-        glm::vec3 color(0.12f + chunkRandom(coord.x, coord.z, 1) * 0.08f,
-                        0.10f + chunkRandom(coord.x, coord.z, 2) * 0.06f,
-                        0.08f + chunkRandom(coord.x, coord.z, 3) * 0.04f);
+        baseColor = glm::vec3(
+            0.12f + chunkRandom(coord.x, coord.z, 1) * 0.08f,
+            0.10f + chunkRandom(coord.x, coord.z, 2) * 0.06f,
+            0.08f + chunkRandom(coord.x, coord.z, 3) * 0.04f
+        ) * colorMult;
         
         float halfSize = chunkSize / 2.0f;
         float worldX = coord.x * chunkSize;
@@ -56,10 +60,10 @@ struct Chunk {
         float h11 = baseHeight + chunkRandom(coord.x + 1, coord.z + 1, 10) * 0.1f;
         
         vertices = {
-            {{worldX - halfSize, h00, worldZ - halfSize}, color, {0, 0}},
-            {{worldX + halfSize, h10, worldZ - halfSize}, color, {1, 0}},
-            {{worldX + halfSize, h11, worldZ + halfSize}, color, {1, 1}},
-            {{worldX - halfSize, h01, worldZ + halfSize}, color, {0, 1}}
+            {{worldX - halfSize, h00, worldZ - halfSize}, baseColor, {0, 0}},
+            {{worldX + halfSize, h10, worldZ - halfSize}, baseColor, {1, 0}},
+            {{worldX + halfSize, h11, worldZ + halfSize}, baseColor, {1, 1}},
+            {{worldX - halfSize, h01, worldZ + halfSize}, baseColor, {0, 1}}
         };
         indices = {0, 1, 2, 0, 2, 3};
     }
@@ -70,7 +74,7 @@ public:
     float chunkSize = 10.0f;
     int loadRadius = 5;
     
-    void update(const glm::vec3& playerPos) {
+    void update(const glm::vec3& playerPos, RegionStateMachine* regions = nullptr) {
         int px = static_cast<int>(floor(playerPos.x / chunkSize));
         int pz = static_cast<int>(floor(playerPos.z / chunkSize));
         
@@ -79,7 +83,20 @@ public:
                 ChunkCoord coord{x, z};
                 if (m_chunks.find(coord) == m_chunks.end()) {
                     Chunk chunk; chunk.coord = coord;
-                    chunk.generate(chunkSize);
+                    
+                    // Color intensity based on region state
+                    float colorMult = 1.0f;
+                    if (regions) {
+                        RegionCoord rc{
+                            static_cast<int>(floor((x * chunkSize) / regions->regionSize)),
+                            static_cast<int>(floor((z * chunkSize) / regions->regionSize))
+                        };
+                        if (auto* rd = regions->getRegion(rc)) {
+                            colorMult = RegionVisuals::forState(rd->state).colorIntensity;
+                        }
+                    }
+                    
+                    chunk.generate(chunkSize, colorMult);
                     m_chunks[coord] = std::move(chunk);
                     m_dirty = true;
                 }
@@ -112,7 +129,7 @@ private:
     bool m_dirty = false;
 };
 
-// Mesh creation helpers
+// Mesh helpers
 std::vector<Vertex> createCube(float size) {
     float s = size / 2.0f;
     return {
@@ -153,12 +170,7 @@ std::vector<uint32_t> createBoxIndices(uint32_t base) {
     return idx;
 }
 
-// Mesh registry
-struct MeshInfo {
-    uint32_t indexStart;
-    uint32_t indexCount;
-    int32_t vertexOffset;
-};
+struct MeshInfo { uint32_t indexStart, indexCount; int32_t vertexOffset; };
 
 class Application {
 public:
@@ -173,7 +185,6 @@ private:
     
     VulkanBuffer m_terrainVB, m_terrainIB;
     uint32_t m_terrainIndexCount = 0;
-    
     VulkanBuffer m_staticVB, m_staticIB;
     std::vector<MeshInfo> m_meshes;
     
@@ -183,19 +194,23 @@ private:
     uint32_t m_currentFrame = 0;
     bool m_framebufferResized = false;
     
-    // ECS World
     World m_world;
     ChunkManager m_chunks;
+    RegionStateMachine m_regions;
     
     bool m_mouseCaptured = true;
     float m_scrollDelta = 0.0f;
     Timer m_timer;
     float m_logTimer = 0.0f;
+    
+    // Current visual state (smoothly interpolated)
+    RegionVisuals m_currentVisuals;
+    RegionState m_lastLoggedState = RegionState::Stable;
 
     void initWindow() {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - ECS", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Mythic Regions", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
@@ -210,29 +225,31 @@ private:
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
-        Logger::info("Version 0.1.0 - Milestone 6: ECS");
+        Logger::info("Version 0.1.0 - Milestone 7: Mythic Regions");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
         m_pipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
         
+        m_currentVisuals = RegionVisuals::forState(RegionState::Stable);
+        
         createMeshes();
         createEntities();
         createSyncObjects();
         
-        m_chunks.update(glm::vec3(0));
+        m_chunks.update(glm::vec3(0), &m_regions);
         rebuildTerrain();
         
-        Logger::info("ECS initialized");
-        Logger::infof("Entities: {}, Renderables: {}", m_world.entities.count(), m_world.renderables.size());
+        Logger::info("Region system initialized");
+        Logger::info("Stay in an area to build reality pressure and shift region states!");
+        Logger::infof("Region size: {} units", m_regions.regionSize);
     }
 
     void createMeshes() {
         std::vector<Vertex> verts;
         std::vector<uint32_t> inds;
-        m_meshes.resize(static_cast<size_t>(MeshId::COUNT));
+        m_meshes.resize(2);
         
-        // Cube mesh
         auto cube = createCube(1.0f);
         m_meshes[0].vertexOffset = static_cast<int32_t>(verts.size());
         verts.insert(verts.end(), cube.begin(), cube.end());
@@ -241,7 +258,6 @@ private:
         inds.insert(inds.end(), cubeIdx.begin(), cubeIdx.end());
         m_meshes[0].indexCount = static_cast<uint32_t>(cubeIdx.size());
         
-        // Player mesh
         auto player = createPlayerMesh(0.6f, 1.8f);
         m_meshes[1].vertexOffset = static_cast<int32_t>(verts.size());
         verts.insert(verts.end(), player.begin(), player.end());
@@ -255,17 +271,14 @@ private:
     }
 
     void createEntities() {
-        // Create player
         Entity player = m_world.createPlayer(glm::vec3(0, 0, 0));
         auto& r = m_world.renderables.get(player);
         r.indexStart = m_meshes[1].indexStart;
         r.indexCount = m_meshes[1].indexCount;
         r.vertexOffset = m_meshes[1].vertexOffset;
         
-        // Create camera
         m_world.createCamera(player);
         
-        // Create landmarks
         for (int x = -50; x <= 50; x += 25) {
             for (int z = -50; z <= 50; z += 25) {
                 if (x == 0 && z == 0) continue;
@@ -281,8 +294,6 @@ private:
                 lr.vertexOffset = m_meshes[0].vertexOffset;
             }
         }
-        
-        Logger::infof("Created {} entities", m_world.entities.count());
     }
 
     void rebuildTerrain() {
@@ -324,10 +335,7 @@ private:
             
             processInput(dt);
             
-            // Get camera for input system
             auto* cam = m_world.cameraControllers.tryGet(m_world.cameraEntity);
-            
-            // ECS Systems
             updatePlayerInput(m_world, dt, m_mouseCaptured, 
                 Input::instance().mouseDeltaX(), Input::instance().mouseDeltaY(), cam);
             updateMovement(m_world, dt);
@@ -337,22 +345,43 @@ private:
             m_scrollDelta = 0.0f;
             Input::instance().update();
             
-            // Update chunks
+            // Update region state machine
             if (m_world.playerEntity != NULL_ENTITY) {
                 const auto& pt = m_world.transforms.get(m_world.playerEntity);
-                m_chunks.update(pt.position);
+                m_regions.update(pt.position, dt);
+                
+                // Smoothly interpolate visual state
+                RegionVisuals target = m_regions.getCurrentVisuals();
+                float visualLerp = 1.0f - exp(-2.0f * dt);
+                m_currentVisuals.fogColor = glm::mix(m_currentVisuals.fogColor, target.fogColor, visualLerp);
+                m_currentVisuals.skyColor = glm::mix(m_currentVisuals.skyColor, target.skyColor, visualLerp);
+                m_currentVisuals.fogDensity = glm::mix(m_currentVisuals.fogDensity, target.fogDensity, visualLerp);
+                m_currentVisuals.colorIntensity = glm::mix(m_currentVisuals.colorIntensity, target.colorIntensity, visualLerp);
+                
+                m_chunks.update(pt.position, &m_regions);
                 if (m_chunks.isDirty()) { vkDeviceWaitIdle(m_context.device()); rebuildTerrain(); }
             }
             
             drawFrame();
             
+            // Logging with region state
             m_logTimer += dt;
-            if (m_logTimer >= 3.0f) {
+            if (m_logTimer >= 2.0f) {
                 if (m_world.playerEntity != NULL_ENTITY) {
                     const auto& pt = m_world.transforms.get(m_world.playerEntity);
-                    Logger::infof("FPS: {:.0f} | Pos: ({:.1f},{:.1f},{:.1f}) | Entities: {} | Chunks: {}", 
-                        m_timer.fps(), pt.position.x, pt.position.y, pt.position.z,
-                        m_world.entities.count(), m_chunks.count());
+                    const auto& rd = m_regions.getCurrentRegionData();
+                    auto rc = m_regions.currentRegion();
+                    
+                    // Log state changes
+                    if (rd.state != m_lastLoggedState) {
+                        Logger::infof("*** REGION STATE CHANGED: {} -> {} ***", 
+                            regionStateName(m_lastLoggedState), regionStateName(rd.state));
+                        m_lastLoggedState = rd.state;
+                    }
+                    
+                    Logger::infof("FPS: {:.0f} | Pos: ({:.0f},{:.0f}) | Region: ({},{}) | State: {} | Pressure: {:.0f}%", 
+                        m_timer.fps(), pt.position.x, pt.position.z,
+                        rc.x, rc.z, regionStateName(rd.state), rd.realityPressure * 100.0f);
                 }
                 m_logTimer = 0.0f;
             }
@@ -412,7 +441,8 @@ private:
         
         auto ext = m_swapchain.extent();
         std::array<VkClearValue, 2> clears{}; 
-        clears[0].color = {{0.02f,0.02f,0.05f,1.0f}}; 
+        // Use region-affected sky color
+        clears[0].color = {{m_currentVisuals.skyColor.r, m_currentVisuals.skyColor.g, m_currentVisuals.skyColor.b, 1.0f}}; 
         clears[1].depthStencil = {1.0f, 0};
         
         VkRenderPassBeginInfo rpi{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -444,7 +474,7 @@ private:
             vkCmdDrawIndexed(cmd, m_terrainIndexCount, 1, 0, 0, 0);
         }
         
-        // Draw ECS entities with renderables
+        // Draw ECS entities
         VkBuffer sb[] = {m_staticVB.buffer()}; VkDeviceSize so[] = {0};
         vkCmdBindVertexBuffers(cmd, 0, 1, sb, so);
         vkCmdBindIndexBuffer(cmd, m_staticIB.buffer(), 0, VK_INDEX_TYPE_UINT32);
@@ -453,7 +483,6 @@ private:
             if (!r.visible) return;
             const auto* t = m_world.transforms.tryGet(e);
             if (!t) return;
-            
             push.model = t->getMatrix();
             vkCmdPushConstants(cmd, m_pipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
             vkCmdDrawIndexed(cmd, r.indexCount, 1, r.indexStart, r.vertexOffset, 0);
