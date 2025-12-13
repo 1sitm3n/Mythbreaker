@@ -10,52 +10,169 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <unordered_map>
+#include <functional>
 
 using namespace myth;
 using namespace myth::vk;
 
-// Ground plane
-std::vector<Vertex> createGroundPlane(float size, float y) {
-    float h = size / 2.0f;
-    glm::vec3 color = {0.15f, 0.12f, 0.1f};
-    return {
-        {{-h, y, -h}, color, {0, 0}},
-        {{ h, y, -h}, color, {1, 0}},
-        {{ h, y,  h}, color, {1, 1}},
-        {{-h, y,  h}, color, {0, 1}}
-    };
+// Hash function for chunk coordinates
+struct ChunkCoord {
+    int x, z;
+    bool operator==(const ChunkCoord& other) const { return x == other.x && z == other.z; }
+};
+
+struct ChunkCoordHash {
+    size_t operator()(const ChunkCoord& c) const {
+        return std::hash<int>()(c.x) ^ (std::hash<int>()(c.z) << 16);
+    }
+};
+
+// Simple pseudo-random based on coordinates
+float chunkRandom(int x, int z, int seed = 0) {
+    int n = x + z * 57 + seed * 131;
+    n = (n << 13) ^ n;
+    return 1.0f - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0f;
 }
+
+// Chunk data
+struct Chunk {
+    ChunkCoord coord;
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+    float baseHeight = 0.0f;
+    glm::vec3 color;
+    bool needsUpload = true;
+    
+    void generate(float chunkSize) {
+        // Procedural height and color based on coordinates
+        baseHeight = chunkRandom(coord.x, coord.z, 0) * 0.3f;
+        
+        // Color varies by chunk for visibility
+        float r = 0.12f + chunkRandom(coord.x, coord.z, 1) * 0.08f;
+        float g = 0.10f + chunkRandom(coord.x, coord.z, 2) * 0.06f;
+        float b = 0.08f + chunkRandom(coord.x, coord.z, 3) * 0.04f;
+        color = glm::vec3(r, g, b);
+        
+        // Create chunk mesh (simple quad with slight height variation at corners)
+        float halfSize = chunkSize / 2.0f;
+        float worldX = coord.x * chunkSize;
+        float worldZ = coord.z * chunkSize;
+        
+        float h00 = baseHeight + chunkRandom(coord.x, coord.z, 10) * 0.1f;
+        float h10 = baseHeight + chunkRandom(coord.x + 1, coord.z, 10) * 0.1f;
+        float h01 = baseHeight + chunkRandom(coord.x, coord.z + 1, 10) * 0.1f;
+        float h11 = baseHeight + chunkRandom(coord.x + 1, coord.z + 1, 10) * 0.1f;
+        
+        vertices = {
+            {{worldX - halfSize, h00, worldZ - halfSize}, color, {0, 0}},
+            {{worldX + halfSize, h10, worldZ - halfSize}, color, {1, 0}},
+            {{worldX + halfSize, h11, worldZ + halfSize}, color, {1, 1}},
+            {{worldX - halfSize, h01, worldZ + halfSize}, color, {0, 1}}
+        };
+        
+        indices = {0, 1, 2, 0, 2, 3};
+    }
+};
+
+// Chunk manager
+class ChunkManager {
+public:
+    float chunkSize = 10.0f;
+    int loadRadius = 5;  // Chunks to load in each direction
+    
+    void update(const glm::vec3& playerPos) {
+        // Calculate which chunk the player is in
+        int playerChunkX = static_cast<int>(floor(playerPos.x / chunkSize));
+        int playerChunkZ = static_cast<int>(floor(playerPos.z / chunkSize));
+        
+        // Mark chunks for loading
+        for (int x = playerChunkX - loadRadius; x <= playerChunkX + loadRadius; x++) {
+            for (int z = playerChunkZ - loadRadius; z <= playerChunkZ + loadRadius; z++) {
+                ChunkCoord coord{x, z};
+                if (m_chunks.find(coord) == m_chunks.end()) {
+                    loadChunk(coord);
+                }
+            }
+        }
+        
+        // Unload distant chunks
+        std::vector<ChunkCoord> toUnload;
+        for (auto& [coord, chunk] : m_chunks) {
+            int dx = abs(coord.x - playerChunkX);
+            int dz = abs(coord.z - playerChunkZ);
+            if (dx > loadRadius + 1 || dz > loadRadius + 1) {
+                toUnload.push_back(coord);
+            }
+        }
+        
+        for (const auto& coord : toUnload) {
+            unloadChunk(coord);
+        }
+    }
+    
+    void loadChunk(const ChunkCoord& coord) {
+        Chunk chunk;
+        chunk.coord = coord;
+        chunk.generate(chunkSize);
+        m_chunks[coord] = std::move(chunk);
+        m_meshDirty = true;
+        Logger::infof("Chunk loaded: ({}, {})", coord.x, coord.z);
+    }
+    
+    void unloadChunk(const ChunkCoord& coord) {
+        m_chunks.erase(coord);
+        m_meshDirty = true;
+        Logger::infof("Chunk unloaded: ({}, {})", coord.x, coord.z);
+    }
+    
+    bool isMeshDirty() const { return m_meshDirty; }
+    void clearDirty() { m_meshDirty = false; }
+    
+    void buildMesh(std::vector<Vertex>& outVertices, std::vector<uint32_t>& outIndices) {
+        outVertices.clear();
+        outIndices.clear();
+        
+        for (auto& [coord, chunk] : m_chunks) {
+            uint32_t baseVertex = static_cast<uint32_t>(outVertices.size());
+            outVertices.insert(outVertices.end(), chunk.vertices.begin(), chunk.vertices.end());
+            for (uint32_t idx : chunk.indices) {
+                outIndices.push_back(baseVertex + idx);
+            }
+        }
+    }
+    
+    size_t chunkCount() const { return m_chunks.size(); }
+    
+private:
+    std::unordered_map<ChunkCoord, Chunk, ChunkCoordHash> m_chunks;
+    bool m_meshDirty = false;
+};
 
 // Cube vertices
 std::vector<Vertex> createCube(float size) {
     float s = size / 2.0f;
     return {
-        // Front (red)
         {{-s, -s,  s}, {0.8f, 0.2f, 0.2f}, {0, 0}},
         {{ s, -s,  s}, {0.8f, 0.2f, 0.2f}, {1, 0}},
         {{ s,  s,  s}, {0.8f, 0.2f, 0.2f}, {1, 1}},
         {{-s,  s,  s}, {0.8f, 0.2f, 0.2f}, {0, 1}},
-        // Back (green)
         {{ s, -s, -s}, {0.2f, 0.8f, 0.2f}, {0, 0}},
         {{-s, -s, -s}, {0.2f, 0.8f, 0.2f}, {1, 0}},
         {{-s,  s, -s}, {0.2f, 0.8f, 0.2f}, {1, 1}},
         {{ s,  s, -s}, {0.2f, 0.8f, 0.2f}, {0, 1}},
-        // Top (blue)
         {{-s,  s,  s}, {0.2f, 0.2f, 0.8f}, {0, 0}},
         {{ s,  s,  s}, {0.2f, 0.2f, 0.8f}, {1, 0}},
         {{ s,  s, -s}, {0.2f, 0.2f, 0.8f}, {1, 1}},
         {{-s,  s, -s}, {0.2f, 0.2f, 0.8f}, {0, 1}},
-        // Bottom (yellow)
         {{-s, -s, -s}, {0.8f, 0.8f, 0.2f}, {0, 0}},
         {{ s, -s, -s}, {0.8f, 0.8f, 0.2f}, {1, 0}},
         {{ s, -s,  s}, {0.8f, 0.8f, 0.2f}, {1, 1}},
         {{-s, -s,  s}, {0.8f, 0.8f, 0.2f}, {0, 1}},
-        // Right (cyan)
         {{ s, -s,  s}, {0.2f, 0.8f, 0.8f}, {0, 0}},
         {{ s, -s, -s}, {0.2f, 0.8f, 0.8f}, {1, 0}},
         {{ s,  s, -s}, {0.2f, 0.8f, 0.8f}, {1, 1}},
         {{ s,  s,  s}, {0.2f, 0.8f, 0.8f}, {0, 1}},
-        // Left (magenta)
         {{-s, -s, -s}, {0.8f, 0.2f, 0.8f}, {0, 0}},
         {{-s, -s,  s}, {0.8f, 0.2f, 0.8f}, {1, 0}},
         {{-s,  s,  s}, {0.8f, 0.2f, 0.8f}, {1, 1}},
@@ -63,7 +180,6 @@ std::vector<Vertex> createCube(float size) {
     };
 }
 
-// Player mesh
 std::vector<Vertex> createPlayerMesh(float width, float height) {
     float w = width / 2.0f;
     float h = height;
@@ -94,41 +210,28 @@ std::vector<uint32_t> createBoxIndices(uint32_t baseVertex) {
     return idx;
 }
 
-std::vector<uint32_t> createQuadIndices(uint32_t baseVertex) {
-    return {baseVertex, baseVertex+1, baseVertex+2, baseVertex, baseVertex+2, baseVertex+3};
-}
-
-// Player with physics
 struct Player {
     glm::vec3 position = {0.0f, 0.0f, 0.0f};
     glm::vec3 velocity = {0.0f, 0.0f, 0.0f};
     float yaw = 0.0f;
     float targetYaw = 0.0f;
-    
-    float moveSpeed = 8.0f;
+    float moveSpeed = 10.0f;
     float turnSmoothSpeed = 10.0f;
     float height = 1.8f;
     float width = 0.6f;
-    
-    // Jump physics
     float jumpForce = 8.0f;
     float gravity = 20.0f;
     bool isGrounded = true;
 };
 
-// Modern third-person camera
 struct ThirdPersonCamera {
-    float yaw = 0.0f;            // Horizontal rotation (mouse X)
-    float pitch = 20.0f;         // Vertical rotation (mouse Y)
-    float distance = 6.0f;       // Distance from player
-    float heightOffset = 1.5f;   // Look at point above player feet
-    
+    float yaw = 0.0f;
+    float pitch = 25.0f;
+    float distance = 8.0f;
+    float heightOffset = 2.0f;
     float mouseSensitivity = 0.15f;
     float minPitch = -30.0f;
     float maxPitch = 60.0f;
-    float minDistance = 2.0f;
-    float maxDistance = 15.0f;
-    
     float smoothSpeed = 10.0f;
     glm::vec3 currentPosition;
     
@@ -136,18 +239,15 @@ struct ThirdPersonCamera {
         yaw -= static_cast<float>(deltaX) * mouseSensitivity;
         pitch += static_cast<float>(deltaY) * mouseSensitivity;
         pitch = glm::clamp(pitch, minPitch, maxPitch);
-        
-        // Keep yaw in 0-360 range
         if (yaw < 0.0f) yaw += 360.0f;
         if (yaw > 360.0f) yaw -= 360.0f;
     }
     
     void adjustDistance(float delta) {
-        distance = glm::clamp(distance - delta, minDistance, maxDistance);
+        distance = glm::clamp(distance - delta, 3.0f, 20.0f);
     }
     
     void update(const Player& player, float dt) {
-        // Calculate camera position based on yaw/pitch/distance
         float horizontalDist = distance * cos(glm::radians(pitch));
         float verticalDist = distance * sin(glm::radians(pitch));
         
@@ -156,13 +256,11 @@ struct ThirdPersonCamera {
         targetPos.z = player.position.z - horizontalDist * cos(glm::radians(yaw));
         targetPos.y = player.position.y + heightOffset + verticalDist;
         
-        // Smooth follow
         float t = 1.0f - exp(-smoothSpeed * dt);
         currentPosition = glm::mix(currentPosition, targetPos, t);
     }
     
     glm::vec3 getForward() const {
-        // Camera forward direction (horizontal only, for movement)
         return glm::normalize(glm::vec3(sin(glm::radians(yaw)), 0.0f, cos(glm::radians(yaw))));
     }
     
@@ -184,12 +282,7 @@ struct SceneObject {
 
 class Application {
 public:
-    void run() { 
-        initWindow(); 
-        initVulkan(); 
-        mainLoop(); 
-        cleanup(); 
-    }
+    void run() { initWindow(); initVulkan(); mainLoop(); cleanup(); }
 
 private:
     GLFWwindow* m_window = nullptr;
@@ -197,8 +290,18 @@ private:
     VulkanSwapchain m_swapchain;
     DescriptorManager m_descriptors;
     VulkanPipeline m_pipeline;
-    VulkanBuffer m_vertexBuffer;
-    VulkanBuffer m_indexBuffer;
+    
+    // Terrain buffer (rebuilt when chunks change)
+    VulkanBuffer m_terrainVertexBuffer;
+    VulkanBuffer m_terrainIndexBuffer;
+    uint32_t m_terrainIndexCount = 0;
+    
+    // Static geometry buffer
+    VulkanBuffer m_staticVertexBuffer;
+    VulkanBuffer m_staticIndexBuffer;
+    uint32_t m_cubeIndexStart = 0, m_cubeIndexCount = 0, m_cubeVertexOffset = 0;
+    uint32_t m_playerIndexStart = 0, m_playerIndexCount = 0, m_playerVertexOffset = 0;
+    
     std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkSemaphore> m_imageAvailable;
     std::vector<VkSemaphore> m_renderFinished;
@@ -208,21 +311,19 @@ private:
     
     Player m_player;
     ThirdPersonCamera m_camera;
+    ChunkManager m_chunkManager;
     bool m_mouseCaptured = true;
     
     Timer m_timer;
     float m_logTimer = 0.0f;
     
-    std::vector<SceneObject> m_objects;
-    uint32_t m_groundIndexStart = 0, m_groundIndexCount = 0;
-    uint32_t m_cubeIndexStart = 0, m_cubeIndexCount = 0, m_cubeVertexOffset = 0;
-    uint32_t m_playerIndexStart = 0, m_playerIndexCount = 0, m_playerVertexOffset = 0;
+    std::vector<SceneObject> m_landmarks;
 
     void initWindow() {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Chunked World", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
@@ -233,8 +334,6 @@ private:
         });
         
         Input::instance().init(m_window);
-        
-        // Capture mouse
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         if (glfwRawMouseMotionSupported())
             glfwSetInputMode(m_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
@@ -242,34 +341,30 @@ private:
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
-        Logger::info("Version 0.1.0 - Modern Third-Person Controls");
+        Logger::info("Version 0.1.0 - Milestone 5: Chunked World");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
         m_pipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
         
-        // Initialize camera position
-        m_camera.currentPosition = glm::vec3(0.0f, 3.0f, 6.0f);
+        m_camera.currentPosition = glm::vec3(0.0f, 5.0f, 10.0f);
         
-        createScene();
+        createStaticGeometry();
+        createLandmarks();
         createSyncObjects();
         
+        // Initial chunk load
+        m_chunkManager.update(m_player.position);
+        rebuildTerrainBuffer();
+        
         Logger::info("Vulkan initialization complete");
-        Logger::info("Controls: WASD move, Mouse look, Space jump, Scroll zoom, Tab toggle mouse, ESC quit");
+        Logger::info("Controls: WASD move, Mouse look, Space jump, Scroll zoom, Tab mouse, ESC quit");
+        Logger::infof("Chunk size: {}, Load radius: {}", m_chunkManager.chunkSize, m_chunkManager.loadRadius);
     }
 
-    void createScene() {
+    void createStaticGeometry() {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        
-        // Ground plane
-        auto ground = createGroundPlane(100.0f, 0.0f);
-        uint32_t groundBase = static_cast<uint32_t>(vertices.size());
-        vertices.insert(vertices.end(), ground.begin(), ground.end());
-        auto groundIdx = createQuadIndices(groundBase);
-        m_groundIndexStart = static_cast<uint32_t>(indices.size());
-        indices.insert(indices.end(), groundIdx.begin(), groundIdx.end());
-        m_groundIndexCount = static_cast<uint32_t>(groundIdx.size());
         
         // Cube template
         auto cube = createCube(1.0f);
@@ -289,33 +384,46 @@ private:
         indices.insert(indices.end(), playerIdx.begin(), playerIdx.end());
         m_playerIndexCount = static_cast<uint32_t>(playerIdx.size());
         
-        // Scene objects
-        m_objects = {
-            {{5.0f, 0.5f, 5.0f}, {1.0f, 1.0f, 1.0f}, 0.0f},
-            {{-5.0f, 0.5f, 5.0f}, {1.0f, 1.0f, 1.0f}, 45.0f},
-            {{5.0f, 0.5f, -5.0f}, {1.0f, 1.0f, 1.0f}, -45.0f},
-            {{-5.0f, 0.5f, -5.0f}, {1.0f, 1.0f, 1.0f}, 30.0f},
-            {{10.0f, 0.75f, 0.0f}, {1.5f, 1.5f, 1.5f}, 15.0f},
-            {{-10.0f, 0.75f, 0.0f}, {1.5f, 1.5f, 1.5f}, -15.0f},
-            {{0.0f, 0.75f, 10.0f}, {1.5f, 1.5f, 1.5f}, 60.0f},
-            {{0.0f, 0.75f, -10.0f}, {1.5f, 1.5f, 1.5f}, -60.0f},
-            {{20.0f, 1.0f, 20.0f}, {2.0f, 2.0f, 2.0f}, 45.0f},
-            {{-20.0f, 1.0f, 20.0f}, {2.0f, 2.0f, 2.0f}, -45.0f},
-            {{20.0f, 1.0f, -20.0f}, {2.0f, 2.0f, 2.0f}, 22.5f},
-            {{-20.0f, 1.0f, -20.0f}, {2.0f, 2.0f, 2.0f}, -22.5f},
-            {{15.0f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, 0.0f},
-            {{15.0f, 1.6f, 0.0f}, {0.8f, 0.8f, 0.8f}, 45.0f},
-            {{15.0f, 2.5f, 0.0f}, {0.6f, 0.6f, 0.6f}, 22.5f},
-            {{15.0f, 3.2f, 0.0f}, {0.4f, 0.4f, 0.4f}, 67.5f},
-        };
-        
-        VulkanBuffer::createWithStaging(&m_context, m_vertexBuffer, vertices.data(), 
+        VulkanBuffer::createWithStaging(&m_context, m_staticVertexBuffer, vertices.data(), 
             sizeof(Vertex) * vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        VulkanBuffer::createWithStaging(&m_context, m_indexBuffer, indices.data(), 
+        VulkanBuffer::createWithStaging(&m_context, m_staticIndexBuffer, indices.data(), 
+            sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    }
+
+    void createLandmarks() {
+        // Landmarks at regular intervals to show world scale
+        for (int x = -50; x <= 50; x += 25) {
+            for (int z = -50; z <= 50; z += 25) {
+                if (x == 0 && z == 0) continue; // Skip origin
+                float height = 1.0f + chunkRandom(x, z, 99) * 1.5f;
+                m_landmarks.push_back({{static_cast<float>(x), height/2, static_cast<float>(z)}, 
+                                       {1.5f, height, 1.5f}, 
+                                       chunkRandom(x, z, 100) * 360.0f});
+            }
+        }
+        Logger::infof("Created {} landmarks", m_landmarks.size());
+    }
+
+    void rebuildTerrainBuffer() {
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+        
+        m_chunkManager.buildMesh(vertices, indices);
+        m_terrainIndexCount = static_cast<uint32_t>(indices.size());
+        
+        if (m_terrainIndexCount == 0) return;
+        
+        // Destroy old buffers
+        m_terrainVertexBuffer.destroy();
+        m_terrainIndexBuffer.destroy();
+        
+        // Create new buffers
+        VulkanBuffer::createWithStaging(&m_context, m_terrainVertexBuffer, vertices.data(), 
+            sizeof(Vertex) * vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        VulkanBuffer::createWithStaging(&m_context, m_terrainIndexBuffer, indices.data(), 
             sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
         
-        Logger::infof("Scene: {} vertices, {} indices, {} objects", 
-            vertices.size(), indices.size(), m_objects.size());
+        m_chunkManager.clearDirty();
     }
 
     void createSyncObjects() {
@@ -354,14 +462,23 @@ private:
             updatePlayer(dt);
             m_camera.update(m_player, dt);
             
+            // Update chunks based on player position
+            m_chunkManager.update(m_player.position);
+            if (m_chunkManager.isMeshDirty()) {
+                vkDeviceWaitIdle(m_context.device());
+                rebuildTerrainBuffer();
+            }
+            
             Input::instance().update();
             drawFrame();
             
             m_logTimer += dt;
-            if (m_logTimer >= 2.0f) {
-                Logger::infof("FPS: {:.1f} | Pos: ({:.1f}, {:.1f}, {:.1f}) | Grounded: {}", 
+            if (m_logTimer >= 3.0f) {
+                int chunkX = static_cast<int>(floor(m_player.position.x / m_chunkManager.chunkSize));
+                int chunkZ = static_cast<int>(floor(m_player.position.z / m_chunkManager.chunkSize));
+                Logger::infof("FPS: {:.1f} | Pos: ({:.1f}, {:.1f}, {:.1f}) | Chunk: ({}, {}) | Loaded: {}", 
                     m_timer.fps(), m_player.position.x, m_player.position.y, m_player.position.z,
-                    m_player.isGrounded ? "yes" : "no");
+                    chunkX, chunkZ, m_chunkManager.chunkCount());
                 m_logTimer = 0.0f;
             }
         }
@@ -371,24 +488,20 @@ private:
     void processInput(float dt) {
         auto& input = Input::instance();
         
-        // ESC to quit
         if (input.isKeyPressed(GLFW_KEY_ESCAPE)) {
             glfwSetWindowShouldClose(m_window, true);
             return;
         }
         
-        // Tab to toggle mouse capture
         if (input.isKeyPressed(GLFW_KEY_TAB)) {
             m_mouseCaptured = !m_mouseCaptured;
             glfwSetInputMode(m_window, GLFW_CURSOR, m_mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
         }
         
-        // Mouse look (only when captured)
         if (m_mouseCaptured) {
             m_camera.processMouseInput(input.mouseDeltaX(), input.mouseDeltaY());
         }
         
-        // Movement input relative to camera
         glm::vec3 moveDir(0.0f);
         glm::vec3 camForward = m_camera.getForward();
         glm::vec3 camRight = m_camera.getRight();
@@ -398,21 +511,20 @@ private:
         if (input.isKeyDown(GLFW_KEY_A)) moveDir -= camRight;
         if (input.isKeyDown(GLFW_KEY_D)) moveDir += camRight;
         
-        // Apply movement
+        // Sprint
+        float speed = m_player.moveSpeed;
+        if (input.isKeyDown(GLFW_KEY_LEFT_SHIFT)) speed *= 2.0f;
+        
         if (glm::length(moveDir) > 0.01f) {
             moveDir = glm::normalize(moveDir);
-            m_player.velocity.x = moveDir.x * m_player.moveSpeed;
-            m_player.velocity.z = moveDir.z * m_player.moveSpeed;
-            
-            // Rotate player to face movement direction
+            m_player.velocity.x = moveDir.x * speed;
+            m_player.velocity.z = moveDir.z * speed;
             m_player.targetYaw = glm::degrees(atan2(moveDir.x, moveDir.z));
         } else {
-            // Friction when not moving
             m_player.velocity.x *= 0.85f;
             m_player.velocity.z *= 0.85f;
         }
         
-        // Jump
         if (input.isKeyPressed(GLFW_KEY_SPACE) && m_player.isGrounded) {
             m_player.velocity.y = m_player.jumpForce;
             m_player.isGrounded = false;
@@ -420,18 +532,15 @@ private:
     }
 
     void updatePlayer(float dt) {
-        // Smooth rotation towards target yaw
+        // Smooth rotation
         float yawDiff = m_player.targetYaw - m_player.yaw;
-        // Handle wrap-around
         if (yawDiff > 180.0f) yawDiff -= 360.0f;
         if (yawDiff < -180.0f) yawDiff += 360.0f;
         m_player.yaw += yawDiff * m_player.turnSmoothSpeed * dt;
-        
-        // Keep yaw in range
         if (m_player.yaw < 0.0f) m_player.yaw += 360.0f;
         if (m_player.yaw > 360.0f) m_player.yaw -= 360.0f;
         
-        // Apply gravity
+        // Gravity
         if (!m_player.isGrounded) {
             m_player.velocity.y -= m_player.gravity * dt;
         }
@@ -439,9 +548,10 @@ private:
         // Apply velocity
         m_player.position += m_player.velocity * dt;
         
-        // Ground collision
-        if (m_player.position.y <= 0.0f) {
-            m_player.position.y = 0.0f;
+        // Ground collision (sample terrain height at player position - simplified)
+        float groundHeight = 0.0f; // Could sample chunk height here
+        if (m_player.position.y <= groundHeight) {
+            m_player.position.y = groundHeight;
             m_player.velocity.y = 0.0f;
             m_player.isGrounded = true;
         }
@@ -488,7 +598,7 @@ private:
         auto extent = m_swapchain.extent();
         CameraUBO ubo{};
         ubo.view = m_camera.getViewMatrix(m_player);
-        ubo.proj = glm::perspective(glm::radians(60.0f), float(extent.width) / float(extent.height), 0.1f, 1000.0f);
+        ubo.proj = glm::perspective(glm::radians(60.0f), float(extent.width) / float(extent.height), 0.1f, 500.0f);
         ubo.proj[1][1] *= -1;
         ubo.viewProj = ubo.proj * ubo.view;
         ubo.cameraPos = m_camera.currentPosition;
@@ -528,20 +638,28 @@ private:
         VkDescriptorSet descSet = m_descriptors.descriptorSet(m_currentFrame);
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.pipelineLayout(), 0, 1, &descSet, 0, nullptr);
         
-        VkBuffer vertexBuffers[] = {m_vertexBuffer.buffer()};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(cmd, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT32);
-        
         PushConstants push{};
         
-        // Draw ground
-        push.model = glm::mat4(1.0f);
-        vkCmdPushConstants(cmd, m_pipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &push);
-        vkCmdDrawIndexed(cmd, m_groundIndexCount, 1, m_groundIndexStart, 0, 0);
+        // Draw terrain chunks
+        if (m_terrainIndexCount > 0) {
+            VkBuffer terrainBuffers[] = {m_terrainVertexBuffer.buffer()};
+            VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(cmd, 0, 1, terrainBuffers, offsets);
+            vkCmdBindIndexBuffer(cmd, m_terrainIndexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT32);
+            
+            push.model = glm::mat4(1.0f);
+            vkCmdPushConstants(cmd, m_pipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &push);
+            vkCmdDrawIndexed(cmd, m_terrainIndexCount, 1, 0, 0, 0);
+        }
         
-        // Draw scene cubes
-        for (const auto& obj : m_objects) {
+        // Draw static geometry (landmarks + player)
+        VkBuffer staticBuffers[] = {m_staticVertexBuffer.buffer()};
+        VkDeviceSize staticOffsets[] = {0};
+        vkCmdBindVertexBuffers(cmd, 0, 1, staticBuffers, staticOffsets);
+        vkCmdBindIndexBuffer(cmd, m_staticIndexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT32);
+        
+        // Draw landmarks
+        for (const auto& obj : m_landmarks) {
             glm::mat4 model = glm::translate(glm::mat4(1.0f), obj.position);
             model = glm::rotate(model, glm::radians(obj.rotationY), glm::vec3(0, 1, 0));
             model = glm::scale(model, obj.scale);
@@ -575,8 +693,10 @@ private:
             vkDestroySemaphore(m_context.device(), m_renderFinished[i], nullptr);
             vkDestroyFence(m_context.device(), m_inFlight[i], nullptr);
         }
-        m_indexBuffer.destroy();
-        m_vertexBuffer.destroy();
+        m_terrainIndexBuffer.destroy();
+        m_terrainVertexBuffer.destroy();
+        m_staticIndexBuffer.destroy();
+        m_staticVertexBuffer.destroy();
         m_pipeline.destroy();
         m_descriptors.destroy();
         m_swapchain.destroy();
