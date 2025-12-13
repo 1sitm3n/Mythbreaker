@@ -2,6 +2,7 @@
 #include "engine/Timer.h"
 #include "engine/Input.h"
 #include "engine/RegionState.h"
+#include "engine/SaveLoad.h"
 #include "engine/ecs/World.h"
 #include "engine/ecs/Systems.h"
 #include "engine/vulkan/VulkanContext.h"
@@ -40,15 +41,15 @@ struct Chunk {
     ChunkCoord coord;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-    glm::vec3 baseColor;
     
     void generate(float chunkSize, float colorMult = 1.0f) {
         float baseHeight = chunkRandom(coord.x, coord.z, 0) * 0.3f;
-        baseColor = glm::vec3(
+        glm::vec3 color(
             0.12f + chunkRandom(coord.x, coord.z, 1) * 0.08f,
             0.10f + chunkRandom(coord.x, coord.z, 2) * 0.06f,
             0.08f + chunkRandom(coord.x, coord.z, 3) * 0.04f
-        ) * colorMult;
+        );
+        color *= colorMult;
         
         float halfSize = chunkSize / 2.0f;
         float worldX = coord.x * chunkSize;
@@ -60,10 +61,10 @@ struct Chunk {
         float h11 = baseHeight + chunkRandom(coord.x + 1, coord.z + 1, 10) * 0.1f;
         
         vertices = {
-            {{worldX - halfSize, h00, worldZ - halfSize}, baseColor, {0, 0}},
-            {{worldX + halfSize, h10, worldZ - halfSize}, baseColor, {1, 0}},
-            {{worldX + halfSize, h11, worldZ + halfSize}, baseColor, {1, 1}},
-            {{worldX - halfSize, h01, worldZ + halfSize}, baseColor, {0, 1}}
+            {{worldX - halfSize, h00, worldZ - halfSize}, color, {0, 0}},
+            {{worldX + halfSize, h10, worldZ - halfSize}, color, {1, 0}},
+            {{worldX + halfSize, h11, worldZ + halfSize}, color, {1, 1}},
+            {{worldX - halfSize, h01, worldZ + halfSize}, color, {0, 1}}
         };
         indices = {0, 1, 2, 0, 2, 3};
     }
@@ -74,7 +75,7 @@ public:
     float chunkSize = 10.0f;
     int loadRadius = 5;
     
-    void update(const glm::vec3& playerPos, RegionStateMachine* regions = nullptr) {
+    void update(const glm::vec3& playerPos) {
         int px = static_cast<int>(floor(playerPos.x / chunkSize));
         int pz = static_cast<int>(floor(playerPos.z / chunkSize));
         
@@ -83,20 +84,7 @@ public:
                 ChunkCoord coord{x, z};
                 if (m_chunks.find(coord) == m_chunks.end()) {
                     Chunk chunk; chunk.coord = coord;
-                    
-                    // Color intensity based on region state
-                    float colorMult = 1.0f;
-                    if (regions) {
-                        RegionCoord rc{
-                            static_cast<int>(floor((x * chunkSize) / regions->regionSize)),
-                            static_cast<int>(floor((z * chunkSize) / regions->regionSize))
-                        };
-                        if (auto* rd = regions->getRegion(rc)) {
-                            colorMult = RegionVisuals::forState(rd->state).colorIntensity;
-                        }
-                    }
-                    
-                    chunk.generate(chunkSize, colorMult);
+                    chunk.generate(chunkSize);
                     m_chunks[coord] = std::move(chunk);
                     m_dirty = true;
                 }
@@ -111,6 +99,7 @@ public:
         for (const auto& coord : toUnload) { m_chunks.erase(coord); m_dirty = true; }
     }
     
+    void forceRebuild() { m_dirty = true; }
     bool isDirty() const { return m_dirty; }
     void clearDirty() { m_dirty = false; }
     size_t count() const { return m_chunks.size(); }
@@ -202,15 +191,15 @@ private:
     float m_scrollDelta = 0.0f;
     Timer m_timer;
     float m_logTimer = 0.0f;
+    float m_totalPlayTime = 0.0f;
     
-    // Current visual state (smoothly interpolated)
     RegionVisuals m_currentVisuals;
     RegionState m_lastLoggedState = RegionState::Stable;
 
     void initWindow() {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Mythic Regions", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Complete", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
@@ -225,7 +214,7 @@ private:
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
-        Logger::info("Version 0.1.0 - Milestone 7: Mythic Regions");
+        Logger::info("Version 0.1.0 - Milestone 8: Save/Load Complete");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
@@ -237,12 +226,17 @@ private:
         createEntities();
         createSyncObjects();
         
-        m_chunks.update(glm::vec3(0), &m_regions);
+        m_chunks.update(glm::vec3(0));
         rebuildTerrain();
         
-        Logger::info("Region system initialized");
-        Logger::info("Stay in an area to build reality pressure and shift region states!");
-        Logger::infof("Region size: {} units", m_regions.regionSize);
+        Logger::info("Engine initialized");
+        Logger::info("Controls: WASD move, Mouse look, Space jump");
+        Logger::info("F5 = Quick Save | F9 = Quick Load");
+        
+        // Auto-load if save exists
+        if (SaveManager::saveExists()) {
+            Logger::info("Save file found - press F9 to load");
+        }
     }
 
     void createMeshes() {
@@ -327,11 +321,121 @@ private:
         }
     }
 
+    // === SAVE SYSTEM ===
+    void saveGame() {
+        SaveData data;
+        data.playTime = m_totalPlayTime;
+        
+        // Save player state
+        if (m_world.playerEntity != NULL_ENTITY) {
+            const auto& t = m_world.transforms.get(m_world.playerEntity);
+            data.playerPosition = t.position;
+            data.playerYaw = t.rotation.y;
+        }
+        
+        // Save camera state
+        if (m_world.cameraEntity != NULL_ENTITY) {
+            const auto* cam = m_world.cameraControllers.tryGet(m_world.cameraEntity);
+            if (cam) {
+                data.cameraYaw = cam->yaw;
+                data.cameraPitch = cam->pitch;
+                data.cameraDistance = cam->distance;
+            }
+        }
+        
+        // Save region states - iterate tracked regions
+        // We need to access RegionStateMachine's internal data
+        // For now, save current region
+        auto rc = m_regions.currentRegion();
+        const auto& rd = m_regions.getCurrentRegionData();
+        data.regions.push_back({rc.x, rc.z, static_cast<int>(rd.state), rd.realityPressure});
+        
+        if (SaveManager::save(data)) {
+            Logger::info("*** GAME SAVED ***");
+            Logger::infof("Position: ({:.1f}, {:.1f}, {:.1f})", 
+                data.playerPosition.x, data.playerPosition.y, data.playerPosition.z);
+        } else {
+            Logger::error("Failed to save game!");
+        }
+    }
+    
+    void loadGame() {
+        SaveData data;
+        if (!SaveManager::load(data)) {
+            Logger::error("Failed to load save file!");
+            return;
+        }
+        
+        m_totalPlayTime = data.playTime;
+        
+        // Restore player state
+        if (m_world.playerEntity != NULL_ENTITY) {
+            auto& t = m_world.transforms.get(m_world.playerEntity);
+            t.position = data.playerPosition;
+            t.rotation.y = data.playerYaw;
+            
+            auto* controller = m_world.playerControllers.tryGet(m_world.playerEntity);
+            if (controller) {
+                controller->targetYaw = data.playerYaw;
+            }
+            
+            auto* vel = m_world.velocities.tryGet(m_world.playerEntity);
+            if (vel) {
+                vel->linear = glm::vec3(0);
+            }
+        }
+        
+        // Restore camera state
+        if (m_world.cameraEntity != NULL_ENTITY) {
+            auto* cam = m_world.cameraControllers.tryGet(m_world.cameraEntity);
+            if (cam) {
+                cam->yaw = data.cameraYaw;
+                cam->pitch = data.cameraPitch;
+                cam->distance = data.cameraDistance;
+                // Snap camera position
+                if (m_world.playerEntity != NULL_ENTITY) {
+                    const auto& pt = m_world.transforms.get(m_world.playerEntity);
+                    float horizontalDist = cam->distance * cos(glm::radians(cam->pitch));
+                    float verticalDist = cam->distance * sin(glm::radians(cam->pitch));
+                    cam->currentPosition.x = pt.position.x - horizontalDist * sin(glm::radians(cam->yaw));
+                    cam->currentPosition.z = pt.position.z - horizontalDist * cos(glm::radians(cam->yaw));
+                    cam->currentPosition.y = pt.position.y + cam->heightOffset + verticalDist;
+                }
+            }
+        }
+        
+        // Restore region states
+        for (const auto& rs : data.regions) {
+            RegionCoord coord{rs.x, rs.z};
+            auto& region = m_regions.getOrCreateRegion(coord);
+            region.state = static_cast<RegionState>(rs.state);
+            region.realityPressure = rs.pressure;
+        }
+        
+        // Update visuals immediately
+        m_currentVisuals = m_regions.getCurrentVisuals();
+        m_lastLoggedState = m_regions.getCurrentRegionData().state;
+        
+        // Force chunk rebuild at new position
+        if (m_world.playerEntity != NULL_ENTITY) {
+            const auto& pt = m_world.transforms.get(m_world.playerEntity);
+            m_chunks.update(pt.position);
+            m_chunks.forceRebuild();
+            vkDeviceWaitIdle(m_context.device());
+            rebuildTerrain();
+        }
+        
+        Logger::info("*** GAME LOADED ***");
+        Logger::infof("Position: ({:.1f}, {:.1f}, {:.1f}) | Play time: {:.0f}s", 
+            data.playerPosition.x, data.playerPosition.y, data.playerPosition.z, data.playTime);
+    }
+
     void mainLoop() {
         while (!glfwWindowShouldClose(m_window)) {
             glfwPollEvents();
             m_timer.tick();
             float dt = m_timer.clampedDeltaTime();
+            m_totalPlayTime += dt;
             
             processInput(dt);
             
@@ -345,12 +449,10 @@ private:
             m_scrollDelta = 0.0f;
             Input::instance().update();
             
-            // Update region state machine
             if (m_world.playerEntity != NULL_ENTITY) {
                 const auto& pt = m_world.transforms.get(m_world.playerEntity);
                 m_regions.update(pt.position, dt);
                 
-                // Smoothly interpolate visual state
                 RegionVisuals target = m_regions.getCurrentVisuals();
                 float visualLerp = 1.0f - exp(-2.0f * dt);
                 m_currentVisuals.fogColor = glm::mix(m_currentVisuals.fogColor, target.fogColor, visualLerp);
@@ -358,30 +460,29 @@ private:
                 m_currentVisuals.fogDensity = glm::mix(m_currentVisuals.fogDensity, target.fogDensity, visualLerp);
                 m_currentVisuals.colorIntensity = glm::mix(m_currentVisuals.colorIntensity, target.colorIntensity, visualLerp);
                 
-                m_chunks.update(pt.position, &m_regions);
+                m_chunks.update(pt.position);
                 if (m_chunks.isDirty()) { vkDeviceWaitIdle(m_context.device()); rebuildTerrain(); }
             }
             
             drawFrame();
             
-            // Logging with region state
             m_logTimer += dt;
-            if (m_logTimer >= 2.0f) {
+            if (m_logTimer >= 3.0f) {
                 if (m_world.playerEntity != NULL_ENTITY) {
                     const auto& pt = m_world.transforms.get(m_world.playerEntity);
                     const auto& rd = m_regions.getCurrentRegionData();
                     auto rc = m_regions.currentRegion();
                     
-                    // Log state changes
                     if (rd.state != m_lastLoggedState) {
-                        Logger::infof("*** REGION STATE CHANGED: {} -> {} ***", 
+                        Logger::infof("*** REGION STATE: {} -> {} ***", 
                             regionStateName(m_lastLoggedState), regionStateName(rd.state));
                         m_lastLoggedState = rd.state;
                     }
                     
-                    Logger::infof("FPS: {:.0f} | Pos: ({:.0f},{:.0f}) | Region: ({},{}) | State: {} | Pressure: {:.0f}%", 
+                    Logger::infof("FPS: {:.0f} | Pos: ({:.0f},{:.0f}) | Region: ({},{}) | {}: {:.0f}% | Time: {:.0f}s", 
                         m_timer.fps(), pt.position.x, pt.position.z,
-                        rc.x, rc.z, regionStateName(rd.state), rd.realityPressure * 100.0f);
+                        rc.x, rc.z, regionStateName(rd.state), rd.realityPressure * 100.0f,
+                        m_totalPlayTime);
                 }
                 m_logTimer = 0.0f;
             }
@@ -395,6 +496,14 @@ private:
         if (input.isKeyPressed(GLFW_KEY_TAB)) {
             m_mouseCaptured = !m_mouseCaptured;
             glfwSetInputMode(m_window, GLFW_CURSOR, m_mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+        }
+        
+        // Save/Load
+        if (input.isKeyPressed(GLFW_KEY_F5)) {
+            saveGame();
+        }
+        if (input.isKeyPressed(GLFW_KEY_F9)) {
+            loadGame();
         }
     }
 
@@ -441,7 +550,6 @@ private:
         
         auto ext = m_swapchain.extent();
         std::array<VkClearValue, 2> clears{}; 
-        // Use region-affected sky color
         clears[0].color = {{m_currentVisuals.skyColor.r, m_currentVisuals.skyColor.g, m_currentVisuals.skyColor.b, 1.0f}}; 
         clears[1].depthStencil = {1.0f, 0};
         
@@ -464,7 +572,6 @@ private:
         
         PushConstants push{};
         
-        // Draw terrain
         if (m_terrainIndexCount > 0) {
             VkBuffer tb[] = {m_terrainVB.buffer()}; VkDeviceSize to[] = {0};
             vkCmdBindVertexBuffers(cmd, 0, 1, tb, to);
@@ -474,7 +581,6 @@ private:
             vkCmdDrawIndexed(cmd, m_terrainIndexCount, 1, 0, 0, 0);
         }
         
-        // Draw ECS entities
         VkBuffer sb[] = {m_staticVB.buffer()}; VkDeviceSize so[] = {0};
         vkCmdBindVertexBuffers(cmd, 0, 1, sb, so);
         vkCmdBindIndexBuffer(cmd, m_staticIB.buffer(), 0, VK_INDEX_TYPE_UINT32);
