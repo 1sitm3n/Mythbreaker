@@ -63,43 +63,25 @@ std::vector<Vertex> createCube(float size) {
     };
 }
 
-// Player capsule (simplified as a tall box with distinct colors)
+// Player mesh
 std::vector<Vertex> createPlayerMesh(float width, float height) {
     float w = width / 2.0f;
     float h = height;
-    glm::vec3 bodyColor = {0.9f, 0.7f, 0.3f};  // Golden
-    glm::vec3 headColor = {0.95f, 0.8f, 0.6f}; // Lighter for top
+    glm::vec3 bodyColor = {0.9f, 0.7f, 0.3f};
+    glm::vec3 headColor = {0.95f, 0.8f, 0.6f};
     return {
-        // Front
-        {{-w, 0,  w}, bodyColor, {0, 0}},
-        {{ w, 0,  w}, bodyColor, {1, 0}},
-        {{ w, h,  w}, headColor, {1, 1}},
-        {{-w, h,  w}, headColor, {0, 1}},
-        // Back
-        {{ w, 0, -w}, bodyColor, {0, 0}},
-        {{-w, 0, -w}, bodyColor, {1, 0}},
-        {{-w, h, -w}, headColor, {1, 1}},
-        {{ w, h, -w}, headColor, {0, 1}},
-        // Top
-        {{-w, h,  w}, headColor, {0, 0}},
-        {{ w, h,  w}, headColor, {1, 0}},
-        {{ w, h, -w}, headColor, {1, 1}},
-        {{-w, h, -w}, headColor, {0, 1}},
-        // Bottom
-        {{-w, 0, -w}, bodyColor, {0, 0}},
-        {{ w, 0, -w}, bodyColor, {1, 0}},
-        {{ w, 0,  w}, bodyColor, {1, 1}},
-        {{-w, 0,  w}, bodyColor, {0, 1}},
-        // Right
-        {{ w, 0,  w}, bodyColor, {0, 0}},
-        {{ w, 0, -w}, bodyColor, {1, 0}},
-        {{ w, h, -w}, headColor, {1, 1}},
-        {{ w, h,  w}, headColor, {0, 1}},
-        // Left
-        {{-w, 0, -w}, bodyColor, {0, 0}},
-        {{-w, 0,  w}, bodyColor, {1, 0}},
-        {{-w, h,  w}, headColor, {1, 1}},
-        {{-w, h, -w}, headColor, {0, 1}}
+        {{-w, 0,  w}, bodyColor, {0, 0}}, {{ w, 0,  w}, bodyColor, {1, 0}},
+        {{ w, h,  w}, headColor, {1, 1}}, {{-w, h,  w}, headColor, {0, 1}},
+        {{ w, 0, -w}, bodyColor, {0, 0}}, {{-w, 0, -w}, bodyColor, {1, 0}},
+        {{-w, h, -w}, headColor, {1, 1}}, {{ w, h, -w}, headColor, {0, 1}},
+        {{-w, h,  w}, headColor, {0, 0}}, {{ w, h,  w}, headColor, {1, 0}},
+        {{ w, h, -w}, headColor, {1, 1}}, {{-w, h, -w}, headColor, {0, 1}},
+        {{-w, 0, -w}, bodyColor, {0, 0}}, {{ w, 0, -w}, bodyColor, {1, 0}},
+        {{ w, 0,  w}, bodyColor, {1, 1}}, {{-w, 0,  w}, bodyColor, {0, 1}},
+        {{ w, 0,  w}, bodyColor, {0, 0}}, {{ w, 0, -w}, bodyColor, {1, 0}},
+        {{ w, h, -w}, headColor, {1, 1}}, {{ w, h,  w}, headColor, {0, 1}},
+        {{-w, 0, -w}, bodyColor, {0, 0}}, {{-w, 0,  w}, bodyColor, {1, 0}},
+        {{-w, h,  w}, headColor, {1, 1}}, {{-w, h, -w}, headColor, {0, 1}}
     };
 }
 
@@ -116,53 +98,80 @@ std::vector<uint32_t> createQuadIndices(uint32_t baseVertex) {
     return {baseVertex, baseVertex+1, baseVertex+2, baseVertex, baseVertex+2, baseVertex+3};
 }
 
-// Player controller
+// Player with physics
 struct Player {
     glm::vec3 position = {0.0f, 0.0f, 0.0f};
     glm::vec3 velocity = {0.0f, 0.0f, 0.0f};
-    float yaw = 0.0f;           // Direction player is facing
+    float yaw = 0.0f;
+    float targetYaw = 0.0f;
+    
     float moveSpeed = 8.0f;
-    float turnSpeed = 180.0f;
+    float turnSmoothSpeed = 10.0f;
     float height = 1.8f;
     float width = 0.6f;
     
-    glm::vec3 getForward() const {
-        return glm::vec3(sin(glm::radians(yaw)), 0.0f, cos(glm::radians(yaw)));
-    }
-    
-    glm::vec3 getRight() const {
-        return glm::vec3(cos(glm::radians(yaw)), 0.0f, -sin(glm::radians(yaw)));
-    }
+    // Jump physics
+    float jumpForce = 8.0f;
+    float gravity = 20.0f;
+    bool isGrounded = true;
 };
 
-// Third-person camera
+// Modern third-person camera
 struct ThirdPersonCamera {
-    float distance = 6.0f;       // Distance behind player
-    float heightOffset = 2.5f;   // Height above player
-    float pitch = 15.0f;         // Looking down angle
-    float yawOffset = 0.0f;      // Orbit offset from player's yaw
-    float smoothSpeed = 8.0f;    // Camera lag smoothing
+    float yaw = 0.0f;            // Horizontal rotation (mouse X)
+    float pitch = 20.0f;         // Vertical rotation (mouse Y)
+    float distance = 6.0f;       // Distance from player
+    float heightOffset = 1.5f;   // Look at point above player feet
     
-    glm::vec3 currentPosition = {0.0f, 3.0f, 6.0f};
-    glm::vec3 targetPosition = {0.0f, 3.0f, 6.0f};
+    float mouseSensitivity = 0.15f;
+    float minPitch = -30.0f;
+    float maxPitch = 60.0f;
+    float minDistance = 2.0f;
+    float maxDistance = 15.0f;
+    
+    float smoothSpeed = 10.0f;
+    glm::vec3 currentPosition;
+    
+    void processMouseInput(double deltaX, double deltaY) {
+        yaw -= static_cast<float>(deltaX) * mouseSensitivity;
+        pitch += static_cast<float>(deltaY) * mouseSensitivity;
+        pitch = glm::clamp(pitch, minPitch, maxPitch);
+        
+        // Keep yaw in 0-360 range
+        if (yaw < 0.0f) yaw += 360.0f;
+        if (yaw > 360.0f) yaw -= 360.0f;
+    }
+    
+    void adjustDistance(float delta) {
+        distance = glm::clamp(distance - delta, minDistance, maxDistance);
+    }
     
     void update(const Player& player, float dt) {
-        // Calculate ideal camera position
-        float totalYaw = player.yaw + yawOffset;
+        // Calculate camera position based on yaw/pitch/distance
         float horizontalDist = distance * cos(glm::radians(pitch));
         float verticalDist = distance * sin(glm::radians(pitch));
         
-        targetPosition.x = player.position.x - horizontalDist * sin(glm::radians(totalYaw));
-        targetPosition.z = player.position.z - horizontalDist * cos(glm::radians(totalYaw));
-        targetPosition.y = player.position.y + heightOffset + verticalDist;
+        glm::vec3 targetPos;
+        targetPos.x = player.position.x - horizontalDist * sin(glm::radians(yaw));
+        targetPos.z = player.position.z - horizontalDist * cos(glm::radians(yaw));
+        targetPos.y = player.position.y + heightOffset + verticalDist;
         
         // Smooth follow
         float t = 1.0f - exp(-smoothSpeed * dt);
-        currentPosition = glm::mix(currentPosition, targetPosition, t);
+        currentPosition = glm::mix(currentPosition, targetPos, t);
+    }
+    
+    glm::vec3 getForward() const {
+        // Camera forward direction (horizontal only, for movement)
+        return glm::normalize(glm::vec3(sin(glm::radians(yaw)), 0.0f, cos(glm::radians(yaw))));
+    }
+    
+    glm::vec3 getRight() const {
+        return glm::normalize(glm::cross(getForward(), glm::vec3(0.0f, 1.0f, 0.0f)));
     }
     
     glm::mat4 getViewMatrix(const Player& player) const {
-        glm::vec3 lookTarget = player.position + glm::vec3(0.0f, player.height * 0.7f, 0.0f);
+        glm::vec3 lookTarget = player.position + glm::vec3(0.0f, player.height * 0.6f, 0.0f);
         return glm::lookAt(currentPosition, lookTarget, glm::vec3(0.0f, 1.0f, 0.0f));
     }
 };
@@ -197,14 +206,13 @@ private:
     uint32_t m_currentFrame = 0;
     bool m_framebufferResized = false;
     
-    // Player and camera
     Player m_player;
     ThirdPersonCamera m_camera;
+    bool m_mouseCaptured = true;
     
     Timer m_timer;
     float m_logTimer = 0.0f;
     
-    // Scene geometry
     std::vector<SceneObject> m_objects;
     uint32_t m_groundIndexStart = 0, m_groundIndexCount = 0;
     uint32_t m_cubeIndexStart = 0, m_cubeIndexCount = 0, m_cubeVertexOffset = 0;
@@ -214,27 +222,40 @@ private:
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Third Person", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
         });
+        glfwSetScrollCallback(m_window, [](GLFWwindow* w, double, double yoffset) {
+            auto app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(w));
+            app->m_camera.adjustDistance(static_cast<float>(yoffset) * 0.5f);
+        });
+        
         Input::instance().init(m_window);
+        
+        // Capture mouse
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        if (glfwRawMouseMotionSupported())
+            glfwSetInputMode(m_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     }
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
-        Logger::info("Version 0.1.0 - Milestone 4: Third-Person Controller");
+        Logger::info("Version 0.1.0 - Modern Third-Person Controls");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
         m_pipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
         
+        // Initialize camera position
+        m_camera.currentPosition = glm::vec3(0.0f, 3.0f, 6.0f);
+        
         createScene();
         createSyncObjects();
         
         Logger::info("Vulkan initialization complete");
-        Logger::info("Controls: WASD move player, Q/E orbit camera, R/F adjust pitch, ESC quit");
+        Logger::info("Controls: WASD move, Mouse look, Space jump, Scroll zoom, Tab toggle mouse, ESC quit");
     }
 
     void createScene() {
@@ -268,27 +289,20 @@ private:
         indices.insert(indices.end(), playerIdx.begin(), playerIdx.end());
         m_playerIndexCount = static_cast<uint32_t>(playerIdx.size());
         
-        // Scene objects - scattered around the world
+        // Scene objects
         m_objects = {
-            // Near spawn
             {{5.0f, 0.5f, 5.0f}, {1.0f, 1.0f, 1.0f}, 0.0f},
             {{-5.0f, 0.5f, 5.0f}, {1.0f, 1.0f, 1.0f}, 45.0f},
             {{5.0f, 0.5f, -5.0f}, {1.0f, 1.0f, 1.0f}, -45.0f},
             {{-5.0f, 0.5f, -5.0f}, {1.0f, 1.0f, 1.0f}, 30.0f},
-            
-            // Mid-range
             {{10.0f, 0.75f, 0.0f}, {1.5f, 1.5f, 1.5f}, 15.0f},
             {{-10.0f, 0.75f, 0.0f}, {1.5f, 1.5f, 1.5f}, -15.0f},
             {{0.0f, 0.75f, 10.0f}, {1.5f, 1.5f, 1.5f}, 60.0f},
             {{0.0f, 0.75f, -10.0f}, {1.5f, 1.5f, 1.5f}, -60.0f},
-            
-            // Far landmarks
             {{20.0f, 1.0f, 20.0f}, {2.0f, 2.0f, 2.0f}, 45.0f},
             {{-20.0f, 1.0f, 20.0f}, {2.0f, 2.0f, 2.0f}, -45.0f},
             {{20.0f, 1.0f, -20.0f}, {2.0f, 2.0f, 2.0f}, 22.5f},
             {{-20.0f, 1.0f, -20.0f}, {2.0f, 2.0f, 2.0f}, -22.5f},
-            
-            // Stacked tower
             {{15.0f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, 0.0f},
             {{15.0f, 1.6f, 0.0f}, {0.8f, 0.8f, 0.8f}, 45.0f},
             {{15.0f, 2.5f, 0.0f}, {0.6f, 0.6f, 0.6f}, 22.5f},
@@ -300,7 +314,7 @@ private:
         VulkanBuffer::createWithStaging(&m_context, m_indexBuffer, indices.data(), 
             sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
         
-        Logger::infof("Scene: {} vertices, {} indices, {} objects + player", 
+        Logger::infof("Scene: {} vertices, {} indices, {} objects", 
             vertices.size(), indices.size(), m_objects.size());
     }
 
@@ -334,19 +348,20 @@ private:
         while (!glfwWindowShouldClose(m_window)) {
             glfwPollEvents();
             m_timer.tick();
-            Input::instance().update();
             
             float dt = m_timer.clampedDeltaTime();
             processInput(dt);
             updatePlayer(dt);
             m_camera.update(m_player, dt);
             
+            Input::instance().update();
             drawFrame();
             
             m_logTimer += dt;
             if (m_logTimer >= 2.0f) {
-                Logger::infof("FPS: {:.1f} | Player: ({:.1f}, {:.1f}, {:.1f}) | Yaw: {:.0f}", 
-                    m_timer.fps(), m_player.position.x, m_player.position.y, m_player.position.z, m_player.yaw);
+                Logger::infof("FPS: {:.1f} | Pos: ({:.1f}, {:.1f}, {:.1f}) | Grounded: {}", 
+                    m_timer.fps(), m_player.position.x, m_player.position.y, m_player.position.z,
+                    m_player.isGrounded ? "yes" : "no");
                 m_logTimer = 0.0f;
             }
         }
@@ -356,54 +371,80 @@ private:
     void processInput(float dt) {
         auto& input = Input::instance();
         
-        if (input.isKeyDown(GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(m_window, true);
+        // ESC to quit
+        if (input.isKeyPressed(GLFW_KEY_ESCAPE)) {
+            glfwSetWindowShouldClose(m_window, true);
+            return;
+        }
         
-        // Player movement (relative to player facing)
+        // Tab to toggle mouse capture
+        if (input.isKeyPressed(GLFW_KEY_TAB)) {
+            m_mouseCaptured = !m_mouseCaptured;
+            glfwSetInputMode(m_window, GLFW_CURSOR, m_mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+        }
+        
+        // Mouse look (only when captured)
+        if (m_mouseCaptured) {
+            m_camera.processMouseInput(input.mouseDeltaX(), input.mouseDeltaY());
+        }
+        
+        // Movement input relative to camera
         glm::vec3 moveDir(0.0f);
-        if (input.isKeyDown(GLFW_KEY_W)) moveDir += m_player.getForward();
-        if (input.isKeyDown(GLFW_KEY_S)) moveDir -= m_player.getForward();
-        if (input.isKeyDown(GLFW_KEY_A)) moveDir -= m_player.getRight();
-        if (input.isKeyDown(GLFW_KEY_D)) moveDir += m_player.getRight();
+        glm::vec3 camForward = m_camera.getForward();
+        glm::vec3 camRight = m_camera.getRight();
         
+        if (input.isKeyDown(GLFW_KEY_W)) moveDir += camForward;
+        if (input.isKeyDown(GLFW_KEY_S)) moveDir -= camForward;
+        if (input.isKeyDown(GLFW_KEY_A)) moveDir -= camRight;
+        if (input.isKeyDown(GLFW_KEY_D)) moveDir += camRight;
+        
+        // Apply movement
         if (glm::length(moveDir) > 0.01f) {
             moveDir = glm::normalize(moveDir);
             m_player.velocity.x = moveDir.x * m_player.moveSpeed;
             m_player.velocity.z = moveDir.z * m_player.moveSpeed;
+            
+            // Rotate player to face movement direction
+            m_player.targetYaw = glm::degrees(atan2(moveDir.x, moveDir.z));
         } else {
-            // Friction
-            m_player.velocity.x *= 0.9f;
-            m_player.velocity.z *= 0.9f;
+            // Friction when not moving
+            m_player.velocity.x *= 0.85f;
+            m_player.velocity.z *= 0.85f;
         }
         
-        // Player rotation (turn left/right)
-        if (input.isKeyDown(GLFW_KEY_LEFT)) m_player.yaw += m_player.turnSpeed * dt;
-        if (input.isKeyDown(GLFW_KEY_RIGHT)) m_player.yaw -= m_player.turnSpeed * dt;
-        
-        // Camera orbit
-        float orbitSpeed = 90.0f * dt;
-        if (input.isKeyDown(GLFW_KEY_Q)) m_camera.yawOffset += orbitSpeed;
-        if (input.isKeyDown(GLFW_KEY_E)) m_camera.yawOffset -= orbitSpeed;
-        
-        // Camera pitch
-        float pitchSpeed = 45.0f * dt;
-        if (input.isKeyDown(GLFW_KEY_R)) m_camera.pitch = glm::min(m_camera.pitch + pitchSpeed, 60.0f);
-        if (input.isKeyDown(GLFW_KEY_F)) m_camera.pitch = glm::max(m_camera.pitch - pitchSpeed, -10.0f);
-        
-        // Camera distance
-        if (input.isKeyDown(GLFW_KEY_Z)) m_camera.distance = glm::max(m_camera.distance - 5.0f * dt, 2.0f);
-        if (input.isKeyDown(GLFW_KEY_X)) m_camera.distance = glm::min(m_camera.distance + 5.0f * dt, 20.0f);
+        // Jump
+        if (input.isKeyPressed(GLFW_KEY_SPACE) && m_player.isGrounded) {
+            m_player.velocity.y = m_player.jumpForce;
+            m_player.isGrounded = false;
+        }
     }
 
     void updatePlayer(float dt) {
+        // Smooth rotation towards target yaw
+        float yawDiff = m_player.targetYaw - m_player.yaw;
+        // Handle wrap-around
+        if (yawDiff > 180.0f) yawDiff -= 360.0f;
+        if (yawDiff < -180.0f) yawDiff += 360.0f;
+        m_player.yaw += yawDiff * m_player.turnSmoothSpeed * dt;
+        
+        // Keep yaw in range
+        if (m_player.yaw < 0.0f) m_player.yaw += 360.0f;
+        if (m_player.yaw > 360.0f) m_player.yaw -= 360.0f;
+        
+        // Apply gravity
+        if (!m_player.isGrounded) {
+            m_player.velocity.y -= m_player.gravity * dt;
+        }
+        
         // Apply velocity
         m_player.position += m_player.velocity * dt;
         
-        // Ground collision (simple - keep on y=0 plane)
-        m_player.position.y = 0.0f;
-        
-        // Keep yaw in reasonable range
-        if (m_player.yaw > 360.0f) m_player.yaw -= 360.0f;
-        if (m_player.yaw < 0.0f) m_player.yaw += 360.0f;
+        // Ground collision
+        if (m_player.position.y <= 0.0f) {
+            m_player.position.y = 0.0f;
+            m_player.velocity.y = 0.0f;
+            m_player.isGrounded = true;
+        }
     }
 
     void drawFrame() {
