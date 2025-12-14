@@ -202,13 +202,13 @@ private:
     VulkanPipeline m_litPipeline;
     VulkanBuffer m_terrainVB, m_terrainIB; uint32_t m_terrainIndexCount = 0;
     VulkanBuffer m_staticVB, m_staticIB; std::vector<MeshInfo> m_meshes;
-    VulkanTexture m_groundTexture, m_stoneTexture, m_playerTexture;
-    uint32_t m_groundMaterial = 0, m_stoneMaterial = 0, m_playerMaterial = 0;
+    VulkanTexture m_groundTexture, m_stoneTexture, m_playerTexture, m_enemyTexture;
+    uint32_t m_groundMaterial = 0, m_stoneMaterial = 0, m_playerMaterial = 0, m_enemyMaterial = 0;
     std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkSemaphore> m_imageAvailable, m_renderFinished;
     std::vector<VkFence> m_inFlight;
     uint32_t m_currentFrame = 0; bool m_framebufferResized = false;
-    World m_world; ChunkManager m_chunks; RegionStateMachine m_regions;
+    World m_world; std::vector<Entity> m_enemyEntities; ChunkManager m_chunks; RegionStateMachine m_regions;
     bool m_mouseCaptured = true; float m_scrollDelta = 0.0f;
     Timer m_timer; float m_logTimer = 0.0f, m_totalPlayTime = 0.0f;
     RegionVisuals m_currentVisuals; RegionState m_lastLoggedState = RegionState::Stable;
@@ -222,7 +222,7 @@ private:
 
     void initWindow() {
         glfwInit(); glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Inventory", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Combat", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
@@ -237,7 +237,7 @@ private:
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
-        Logger::info("Version 0.6.0 - Milestone 13: Inventory System");
+        Logger::info("Version 0.7.0 - Milestone 14: Combat Foundation");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
@@ -251,8 +251,9 @@ private:
         m_chunks.update(glm::vec3(0));
         rebuildTerrain();
         spawnPickups();
+        spawnEnemies();
         Logger::info("Terrain: 32m chunks, 16x16 vertices each");
-        Logger::info("F5=Save|F9=Load|I=Inv|E=Use|Q=Drop|1-5=Slot");
+        Logger::info("LMB=Attack|I=Inv|E=Use|Q=Drop|1-5=Slot");
     }
 
     void createTextures() {
@@ -291,6 +292,18 @@ private:
         }
         m_playerTexture.loadFromMemory(&m_context, playerPixels.data(), 64, 64);
         m_playerMaterial = m_descriptors.createMaterial(m_playerTexture);
+        
+        // Enemy texture - red/dark
+        std::vector<uint8_t> enemyPixels(64 * 64 * 4);
+        for (int i = 0; i < 64 * 64; i++) {
+            float n = (rng() % 30) / 100.0f;
+            enemyPixels[i*4+0] = static_cast<uint8_t>(180 + n * 40);  // R - red
+            enemyPixels[i*4+1] = static_cast<uint8_t>(40 + n * 20);   // G - dark
+            enemyPixels[i*4+2] = static_cast<uint8_t>(40 + n * 20);   // B - dark
+            enemyPixels[i*4+3] = 255;
+        }
+        m_enemyTexture.loadFromMemory(&m_context, enemyPixels.data(), 64, 64);
+        m_enemyMaterial = m_descriptors.createMaterial(m_enemyTexture);
     }
 
     void createMeshes() {
@@ -332,6 +345,13 @@ private:
         inv.addItem(ItemId::Bread, 5);
         inv.addItem(ItemId::WoodenSword, 1);
         m_world.inventories.add(player, inv);
+        
+        // Add combat ability to player
+        Combat playerCombat;
+        playerCombat.damage = 25.0f;
+        playerCombat.attackRange = 2.5f;
+        playerCombat.attackCooldown = 0.5f;
+        m_world.combats.add(player, playerCombat);
         
         m_world.createCamera(player);
         
@@ -432,6 +452,204 @@ private:
         Logger::info("*** LOADED ***");
     }
 
+    void spawnEnemies() {
+        struct EnemySpawn { float x, z; float hp; float dmg; };
+        std::vector<EnemySpawn> spawns = {
+            {20, 20, 50, 10},
+            {-25, 15, 50, 10},
+            {30, -20, 75, 15},
+            {-20, -25, 75, 15},
+            {40, 40, 100, 20},
+            {-40, 40, 100, 20},
+        };
+        for (const auto& spawn : spawns) {
+            spawnEnemy(spawn.x, spawn.z, spawn.hp, spawn.dmg);
+        }
+        Logger::infof("Spawned {} enemies", spawns.size());
+        Logger::infof("Enemy entity list size: {}", m_enemyEntities.size());
+    }
+    
+    Entity spawnEnemy(float x, float z, float hp, float dmg) {
+        float h = m_chunks.getHeightAt(x, z) + 1.0f;
+        Entity e = m_world.createEntity(glm::vec3(x, h, z), {0,0,0}, {1.2f, 1.8f, 1.2f});
+        
+        Health health; health.current = hp; health.max = hp;
+        m_world.healths.add(e, health);
+        
+        Enemy enemy;
+        enemy.homePosition = glm::vec3(x, h, z);
+        enemy.patrolTarget = enemy.homePosition;
+        enemy.damage = dmg;
+        m_world.enemies.add(e, enemy);
+        m_world.enemyTags.add(e, EnemyTag{});
+        
+        m_world.velocities.add(e, Velocity{});
+        
+        Renderable r;
+        r.meshId = static_cast<uint32_t>(MeshId::Cube);
+        r.indexStart = m_meshes[0].indexStart;
+        r.indexCount = m_meshes[0].indexCount;
+        r.vertexOffset = m_meshes[0].vertexOffset;
+        m_world.renderables.add(e, r);
+        m_enemyEntities.push_back(e);
+        return e;
+    }
+    
+    void updateEnemyAI(float dt) {
+        if (m_world.playerEntity == NULL_ENTITY) return;
+        const auto& playerPos = m_world.transforms.get(m_world.playerEntity).position;
+        auto* playerStats = m_world.stats.tryGet(m_world.playerEntity);
+        
+        std::vector<Entity> deadEnemies;
+        
+        m_world.enemies.each([&](Entity e, Enemy& enemy) {
+            auto* health = m_world.healths.tryGet(e);
+            auto* transform = m_world.transforms.tryGet(e);
+            auto* velocity = m_world.velocities.tryGet(e);
+            if (!health || !transform || !velocity) return;
+            
+            enemy.update(dt);
+            
+            // Check if dead
+            if (health->isDead) {
+                enemy.state = AIState::Dead;
+                deadEnemies.push_back(e);
+                return;
+            }
+            
+            float distToPlayer = glm::length(playerPos - transform->position);
+            glm::vec3 dirToPlayer = distToPlayer > 0.1f ? 
+                glm::normalize(playerPos - transform->position) : glm::vec3(0);
+            
+            // State machine
+            switch (enemy.state) {
+                case AIState::Idle:
+                    velocity->linear = glm::vec3(0);
+                    if (distToPlayer < enemy.aggroRange) {
+                        enemy.state = AIState::Chase;
+                    } else if (enemy.patrolWaitTimer <= 0) {
+                        // Pick new patrol point
+                        float angle = static_cast<float>(rand()) / RAND_MAX * 6.28f;
+                        float dist = static_cast<float>(rand()) / RAND_MAX * enemy.patrolRadius;
+                        enemy.patrolTarget = enemy.homePosition + glm::vec3(cos(angle) * dist, 0, sin(angle) * dist);
+                        enemy.state = AIState::Patrol;
+                    }
+                    break;
+                    
+                case AIState::Patrol: {
+                    glm::vec3 toTarget = enemy.patrolTarget - transform->position;
+                    toTarget.y = 0;
+                    float dist = glm::length(toTarget);
+                    if (dist < 1.0f) {
+                        enemy.state = AIState::Idle;
+                        enemy.patrolWaitTimer = 2.0f + static_cast<float>(rand()) / RAND_MAX * 3.0f;
+                    } else {
+                        glm::vec3 dir = glm::normalize(toTarget);
+                        velocity->linear.x = dir.x * enemy.moveSpeed * 0.5f;
+                        velocity->linear.z = dir.z * enemy.moveSpeed * 0.5f;
+                    }
+                    if (distToPlayer < enemy.aggroRange) {
+                        enemy.state = AIState::Chase;
+                    }
+                    break;
+                }
+                    
+                case AIState::Chase:
+                    if (distToPlayer > enemy.aggroRange * 1.5f) {
+                        enemy.state = AIState::Idle;
+                        velocity->linear = glm::vec3(0);
+                    } else if (distToPlayer < enemy.attackRange) {
+                        enemy.state = AIState::Attack;
+                        velocity->linear = glm::vec3(0);
+                    } else {
+                        velocity->linear.x = dirToPlayer.x * enemy.moveSpeed;
+                        velocity->linear.z = dirToPlayer.z * enemy.moveSpeed;
+                        // Face player
+                        transform->rotation.y = glm::degrees(atan2(dirToPlayer.x, dirToPlayer.z));
+                    }
+                    break;
+                    
+                case AIState::Attack:
+                    velocity->linear = glm::vec3(0);
+                    if (distToPlayer > enemy.attackRange * 1.2f) {
+                        enemy.state = AIState::Chase;
+                    } else if (enemy.canAttack() && playerStats && !playerStats->isDead) {
+                        // Attack player
+                        playerStats->takeDamage(enemy.damage);
+                        enemy.cooldownTimer = enemy.attackCooldown;
+                        Logger::infof("Enemy hit you for {:.0f} damage! HP: {:.0f}/{:.0f}", 
+                            enemy.damage, playerStats->health, playerStats->maxHealth);
+                    }
+                    break;
+                    
+                case AIState::Dead:
+                    break;
+            }
+            
+            // Apply movement to terrain
+            transform->position.x += velocity->linear.x * dt;
+            transform->position.z += velocity->linear.z * dt;
+            float groundH = m_chunks.getHeightAt(transform->position.x, transform->position.z);
+            transform->position.y = groundH + 0.9f;
+        });
+        
+        // Respawn dead enemies after delay
+        for (Entity e : deadEnemies) {
+            auto* enemy = m_world.enemies.tryGet(e);
+            if (enemy) {
+                // Respawn at home position
+                Logger::info("Enemy defeated! +10 XP");
+                float x = enemy->homePosition.x;
+                float z = enemy->homePosition.z;
+                auto* health = m_world.healths.tryGet(e);
+                float maxHp = health ? health->max : 50.0f;
+                float dmg = enemy->damage;
+                // Remove from enemy list
+                m_enemyEntities.erase(std::remove(m_enemyEntities.begin(), m_enemyEntities.end(), e), m_enemyEntities.end());
+                m_world.destroyEntity(e);
+                // Delayed respawn - for now just respawn immediately offset
+                spawnEnemy(x + 5.0f, z + 5.0f, maxHp, dmg);
+            }
+        }
+    }
+    
+    void playerAttack() {
+        if (m_world.playerEntity == NULL_ENTITY) return;
+        auto* combat = m_world.combats.tryGet(m_world.playerEntity);
+        auto* stats = m_world.stats.tryGet(m_world.playerEntity);
+        if (!combat || !stats || stats->isDead) return;
+        
+        if (!combat->canAttack()) return;
+        combat->startAttack();
+        
+        const auto& playerPos = m_world.transforms.get(m_world.playerEntity).position;
+        const auto& playerRot = m_world.transforms.get(m_world.playerEntity).rotation;
+        float yaw = glm::radians(playerRot.y);
+        glm::vec3 attackDir = glm::vec3(sin(yaw), 0, cos(yaw));
+        
+        // Find enemies in range and in front of player
+        m_world.enemies.each([&](Entity e, Enemy& enemy) {
+            auto* health = m_world.healths.tryGet(e);
+            auto* transform = m_world.transforms.tryGet(e);
+            if (!health || !transform || health->isDead) return;
+            
+            glm::vec3 toEnemy = transform->position - playerPos;
+            float dist = glm::length(toEnemy);
+            
+            if (dist < combat->attackRange) {
+                // Check if roughly in front (dot product > 0)
+                glm::vec3 dirToEnemy = dist > 0.1f ? glm::normalize(toEnemy) : glm::vec3(0);
+                float dot = glm::dot(attackDir, glm::vec3(dirToEnemy.x, 0, dirToEnemy.z));
+                
+                if (dot > 0.3f || dist < 1.5f) {  // In front or very close
+                    health->takeDamage(combat->damage);
+                    enemy.hitFlashTimer = 0.2f;
+                    Logger::infof("Hit enemy for {:.0f} damage! Enemy HP: {:.0f}/{:.0f}",
+                        combat->damage, health->current, health->max);
+                }
+            }
+        });
+    }
     void spawnPickups() {
         struct PickupSpawn { float x, z; ItemId item; uint8_t count; };
         std::vector<PickupSpawn> spawns = {
@@ -584,6 +802,16 @@ private:
             
             collectPickups();
             
+            // Update combat cooldowns
+            if (m_world.playerEntity != NULL_ENTITY) {
+                if (auto* combat = m_world.combats.tryGet(m_world.playerEntity)) {
+                    combat->update(dt);
+                }
+            }
+            
+            // Update enemy AI
+            updateEnemyAI(dt);
+            
             Input::instance().update();
             
             if (m_world.playerEntity != NULL_ENTITY) {
@@ -651,6 +879,11 @@ private:
             m_mouseCaptured = !m_mouseCaptured;
             glfwSetInputMode(m_window, GLFW_CURSOR, m_mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
         }
+        // Combat - left click to attack
+        if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            playerAttack();
+        }
+        
         // Inventory controls
         if (input.isKeyPressed(GLFW_KEY_I)) showInventory();
         if (input.isKeyPressed(GLFW_KEY_E)) useSelectedItem();
@@ -806,6 +1039,24 @@ private:
             }
         }
         
+
+        // Enemies - red humanoids
+        m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_enemyMaterial);
+        {
+            VkBuffer evb[] = {m_staticVB.buffer()};
+            VkDeviceSize eoff[] = {0};
+            vkCmdBindVertexBuffers(cmd, 0, 1, evb, eoff);
+            vkCmdBindIndexBuffer(cmd, m_staticIB.buffer(), 0, VK_INDEX_TYPE_UINT32);
+        }
+        for (Entity e : m_enemyEntities) {
+            const auto* t = m_world.transforms.tryGet(e);
+            const auto* health = m_world.healths.tryGet(e);
+            if (t && health && !health->isDead) {
+                push.model = t->getMatrix();
+                vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+                vkCmdDrawIndexed(cmd, m_meshes[1].indexCount, 1, m_meshes[1].indexStart, m_meshes[1].vertexOffset, 0);
+            }
+        }
         vkCmdEndRenderPass(cmd);
         vkEndCommandBuffer(cmd);
     }
@@ -838,6 +1089,28 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

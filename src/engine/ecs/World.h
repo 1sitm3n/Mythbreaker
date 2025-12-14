@@ -4,6 +4,7 @@
 #include "Components.h"
 #include "engine/Stats.h"
 #include "engine/Inventory.h"
+#include "engine/Combat.h"
 
 namespace myth {
 namespace ecs {
@@ -21,6 +22,10 @@ struct World {
     ComponentArray<Stats> stats;
     ComponentArray<Inventory> inventories;
     ComponentArray<Pickup> pickups;
+    ComponentArray<Combat> combats;
+    ComponentArray<Health> healths;
+    ComponentArray<Enemy> enemies;
+    ComponentArray<EnemyTag> enemyTags;
     ComponentArray<PlayerTag> playerTags;
     ComponentArray<CameraTag> cameraTags;
     ComponentArray<LandmarkTag> landmarkTags;
@@ -91,6 +96,10 @@ struct World {
         stats.remove(e);
         inventories.remove(e);
         pickups.remove(e);
+        combats.remove(e);
+        healths.remove(e);
+        enemies.remove(e);
+        enemyTags.remove(e);
         entities.destroy(e);
         
         if (e == playerEntity) playerEntity = NULL_ENTITY;
@@ -100,6 +109,7 @@ struct World {
 
 } // namespace ecs
 } // namespace myth
+
 
 
 
