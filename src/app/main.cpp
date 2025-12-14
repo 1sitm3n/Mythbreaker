@@ -3,6 +3,7 @@
 #include "engine/Timer.h"
 #include "engine/Input.h"
 #include "engine/Noise.h"
+#include "engine/Item.h"
 #include "engine/RegionState.h"
 #include "engine/SaveLoad.h"
 #include "engine/ecs/World.h"
@@ -221,7 +222,7 @@ private:
 
     void initWindow() {
         glfwInit(); glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Character Stats", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Inventory", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
@@ -236,7 +237,7 @@ private:
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
-        Logger::info("Version 0.5.0 - Milestone 12: Character Stats");
+        Logger::info("Version 0.6.0 - Milestone 13: Inventory System");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
@@ -249,8 +250,9 @@ private:
         createSyncObjects();
         m_chunks.update(glm::vec3(0));
         rebuildTerrain();
+        spawnPickups();
         Logger::info("Terrain: 32m chunks, 16x16 vertices each");
-        Logger::info("F5 = Save | F9 = Load");
+        Logger::info("F5=Save|F9=Load|I=Inv|E=Use|Q=Drop|1-5=Slot");
     }
 
     void createTextures() {
@@ -323,6 +325,13 @@ private:
         
         // Add stats to player
         m_world.stats.add(player, Stats{});
+        
+        // Add inventory with starting items
+        Inventory inv;
+        inv.addItem(ItemId::HealthPotion, 3);
+        inv.addItem(ItemId::Bread, 5);
+        inv.addItem(ItemId::WoodenSword, 1);
+        m_world.inventories.add(player, inv);
         
         m_world.createCamera(player);
         
@@ -423,6 +432,119 @@ private:
         Logger::info("*** LOADED ***");
     }
 
+    void spawnPickups() {
+        struct PickupSpawn { float x, z; ItemId item; uint8_t count; };
+        std::vector<PickupSpawn> spawns = {
+            {5, 5, ItemId::HealthPotion, 2},
+            {-8, 3, ItemId::Apple, 3},
+            {10, -5, ItemId::Stone, 10},
+            {-5, -10, ItemId::MythicShard, 1},
+            {15, 10, ItemId::IronOre, 5},
+            {-12, 8, ItemId::Crystal, 2},
+            {8, -12, ItemId::StaminaPotion, 1},
+            {-15, -5, ItemId::Wood, 8},
+        };
+        for (const auto& spawn : spawns) {
+            float h = m_chunks.getHeightAt(spawn.x, spawn.z) + 0.5f;
+            Entity e = m_world.createEntity(glm::vec3(spawn.x, h, spawn.z), {0,0,0}, {0.4f, 0.4f, 0.4f});
+            Pickup pickup;
+            pickup.itemId = spawn.item;
+            pickup.amount = spawn.count;
+            m_world.pickups.add(e, pickup);
+            Renderable r;
+            r.meshId = static_cast<uint32_t>(MeshId::Cube);
+            r.indexStart = m_meshes[0].indexStart;
+            r.indexCount = m_meshes[0].indexCount;
+            r.vertexOffset = m_meshes[0].vertexOffset;
+            m_world.renderables.add(e, r);
+        }
+        Logger::infof("Spawned {} pickups", spawns.size());
+    }
+    
+    void collectPickups() {
+        if (m_world.playerEntity == NULL_ENTITY) return;
+        const auto& playerPos = m_world.transforms.get(m_world.playerEntity).position;
+        auto* inv = m_world.inventories.tryGet(m_world.playerEntity);
+        if (!inv) return;
+        std::vector<Entity> toDestroy;
+        m_world.pickups.each([&](Entity e, Pickup& pickup) {
+            if (pickup.collected) return;
+            const auto* t = m_world.transforms.tryGet(e);
+            if (!t) return;
+            float dist = glm::length(playerPos - t->position);
+            if (dist < pickup.pickupRadius) {
+                uint8_t remaining = inv->addItem(pickup.itemId, pickup.amount);
+                if (remaining < pickup.amount) {
+                    const auto& def = ItemDatabase::get(pickup.itemId);
+                    Logger::infof("Picked up: {} x{}", def.name, pickup.amount - remaining);
+                    if (remaining == 0) { pickup.collected = true; toDestroy.push_back(e); }
+                    else { pickup.amount = remaining; }
+                }
+            }
+        });
+        for (Entity e : toDestroy) m_world.destroyEntity(e);
+    }
+    
+    void useSelectedItem() {
+        if (m_world.playerEntity == NULL_ENTITY) return;
+        auto* inv = m_world.inventories.tryGet(m_world.playerEntity);
+        auto* stats = m_world.stats.tryGet(m_world.playerEntity);
+        if (!inv || !stats) return;
+        auto& slot = inv->selectedItem();
+        if (slot.isEmpty()) return;
+        const auto& def = ItemDatabase::get(slot.id);
+        if (def.type == ItemType::Consumable) {
+            bool used = false;
+            if (slot.id == ItemId::HealthPotion || slot.id == ItemId::Bread || slot.id == ItemId::Apple) {
+                if (stats->health < stats->maxHealth) { stats->heal(def.value); used = true;
+                    Logger::infof("Used {} - HP: {:.0f}/{:.0f}", def.name, stats->health, stats->maxHealth); }
+            } else if (slot.id == ItemId::StaminaPotion) {
+                if (stats->stamina < stats->maxStamina) { stats->stamina = (std::min)(stats->maxStamina, stats->stamina + def.value); used = true;
+                    Logger::infof("Used {} - STA: {:.0f}/{:.0f}", def.name, stats->stamina, stats->maxStamina); }
+            } else if (slot.id == ItemId::ManaPotion) {
+                if (stats->mana < stats->maxMana) { stats->mana = (std::min)(stats->maxMana, stats->mana + def.value); used = true;
+                    Logger::infof("Used {} - MP: {:.0f}/{:.0f}", def.name, stats->mana, stats->maxMana); }
+            }
+            if (used) { slot.count--; if (slot.count == 0) slot.clear(); }
+        }
+    }
+    
+    void dropSelectedItem() {
+        if (m_world.playerEntity == NULL_ENTITY) return;
+        auto* inv = m_world.inventories.tryGet(m_world.playerEntity);
+        if (!inv) return;
+        auto& slot = inv->selectedItem();
+        if (slot.isEmpty()) return;
+        const auto& playerT = m_world.transforms.get(m_world.playerEntity);
+        float yaw = glm::radians(playerT.rotation.y);
+        glm::vec3 dropPos = playerT.position + glm::vec3(sin(yaw), 0, cos(yaw)) * 2.0f;
+        dropPos.y = m_chunks.getHeightAt(dropPos.x, dropPos.z) + 0.5f;
+        Entity e = m_world.createEntity(dropPos, {0,0,0}, {0.4f, 0.4f, 0.4f});
+        Pickup pickup; pickup.itemId = slot.id; pickup.amount = slot.count;
+        m_world.pickups.add(e, pickup);
+        Renderable r; r.meshId = static_cast<uint32_t>(MeshId::Cube);
+        r.indexStart = m_meshes[0].indexStart; r.indexCount = m_meshes[0].indexCount; r.vertexOffset = m_meshes[0].vertexOffset;
+        m_world.renderables.add(e, r);
+        const auto& def = ItemDatabase::get(slot.id);
+        Logger::infof("Dropped: {} x{}", def.name, slot.count);
+        slot.clear();
+    }
+    
+    void showInventory() {
+        if (m_world.playerEntity == NULL_ENTITY) return;
+        auto* inv = m_world.inventories.tryGet(m_world.playerEntity);
+        if (!inv) return;
+        Logger::info("=== INVENTORY ===");
+        auto items = inv->getNonEmptySlots();
+        if (items.empty()) { Logger::info("  (empty)"); }
+        else { for (const auto& [idx, stack] : items) {
+            const auto& def = ItemDatabase::get(stack->id);
+            std::string sel = (idx == inv->selectedSlot()) ? " <--" : "";
+            Logger::infof("  [{}] {} x{}{}", idx, def.name, stack->count, sel);
+        } }
+        Logger::infof("Slots: {}/{} | Selected: {}", inv->usedSlots(), Inventory::MAX_SLOTS, inv->selectedSlot());
+    }
+
     void mainLoop() {
         while (!glfwWindowShouldClose(m_window)) {
             glfwPollEvents();
@@ -459,6 +581,9 @@ private:
                 Input::instance().mouseDeltaX(), Input::instance().mouseDeltaY(), m_scrollDelta);
             
             m_scrollDelta = 0.0f;
+            
+            collectPickups();
+            
             Input::instance().update();
             
             if (m_world.playerEntity != NULL_ENTITY) {
@@ -526,6 +651,16 @@ private:
             m_mouseCaptured = !m_mouseCaptured;
             glfwSetInputMode(m_window, GLFW_CURSOR, m_mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
         }
+        // Inventory controls
+        if (input.isKeyPressed(GLFW_KEY_I)) showInventory();
+        if (input.isKeyPressed(GLFW_KEY_E)) useSelectedItem();
+        if (input.isKeyPressed(GLFW_KEY_Q)) dropSelectedItem();
+        if (input.isKeyPressed(GLFW_KEY_1)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(0); }
+        if (input.isKeyPressed(GLFW_KEY_2)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(1); }
+        if (input.isKeyPressed(GLFW_KEY_3)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(2); }
+        if (input.isKeyPressed(GLFW_KEY_4)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(3); }
+        if (input.isKeyPressed(GLFW_KEY_5)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(4); }
+        
         if (input.isKeyPressed(GLFW_KEY_F5)) saveGame();
         if (input.isKeyPressed(GLFW_KEY_F9)) loadGame();
         
@@ -703,6 +838,13 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
 
 
 
