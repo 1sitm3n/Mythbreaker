@@ -34,18 +34,18 @@ struct Chunk {
     ChunkCoord coord; std::vector<Vertex> vertices; std::vector<uint32_t> indices;
     void generate(float chunkSize) {
         glm::vec3 color(1.0f);
+        glm::vec3 normal(0.0f, 1.0f, 0.0f);
         float halfSize = chunkSize / 2.0f, worldX = coord.x * chunkSize, worldZ = coord.z * chunkSize;
-        // Use world corner coordinates for consistent heights across chunks
         float h00 = chunkRandom(coord.x, coord.z, 10) * 0.15f;
         float h10 = chunkRandom(coord.x + 1, coord.z, 10) * 0.15f;
         float h01 = chunkRandom(coord.x, coord.z + 1, 10) * 0.15f;
         float h11 = chunkRandom(coord.x + 1, coord.z + 1, 10) * 0.15f;
         float uvScale = 2.0f;
         vertices = {
-            {{worldX - halfSize, h00, worldZ - halfSize}, color, {0, 0}},
-            {{worldX + halfSize, h10, worldZ - halfSize}, color, {uvScale, 0}},
-            {{worldX + halfSize, h11, worldZ + halfSize}, color, {uvScale, uvScale}},
-            {{worldX - halfSize, h01, worldZ + halfSize}, color, {0, uvScale}}
+            {{worldX - halfSize, h00, worldZ - halfSize}, color, {0, 0}, normal},
+            {{worldX + halfSize, h10, worldZ - halfSize}, color, {uvScale, 0}, normal},
+            {{worldX + halfSize, h11, worldZ + halfSize}, color, {uvScale, uvScale}, normal},
+            {{worldX - halfSize, h01, worldZ + halfSize}, color, {0, uvScale}, normal}
         };
         indices = {0, 2, 1, 0, 3, 2};
     }
@@ -66,7 +66,7 @@ public:
         for (auto& [coord, chunk] : m_chunks) { if (abs(coord.x - px) > loadRadius + 1 || abs(coord.z - pz) > loadRadius + 1) toUnload.push_back(coord); }
         for (const auto& coord : toUnload) { m_chunks.erase(coord); m_dirty = true; }
     }
-    void forceRebuild() { m_dirty = true; } bool isDirty() const { return m_dirty; } void clearDirty() { m_dirty = false; } size_t count() const { return m_chunks.size(); }
+    void forceRebuild() { m_dirty = true; } bool isDirty() const { return m_dirty; } void clearDirty() { m_dirty = false; }
     void buildMesh(std::vector<Vertex>& verts, std::vector<uint32_t>& inds) {
         verts.clear(); inds.clear();
         for (auto& [coord, chunk] : m_chunks) { uint32_t base = static_cast<uint32_t>(verts.size()); verts.insert(verts.end(), chunk.vertices.begin(), chunk.vertices.end()); for (uint32_t idx : chunk.indices) inds.push_back(base + idx); }
@@ -75,8 +75,30 @@ private:
     std::unordered_map<ChunkCoord, Chunk, ChunkCoordHash> m_chunks; bool m_dirty = false;
 };
 
-std::vector<Vertex> createCube(float size) { float s = size / 2.0f; glm::vec3 w(1.0f); return { {{-s,-s,s},w,{0,0}},{{s,-s,s},w,{1,0}},{{s,s,s},w,{1,1}},{{-s,s,s},w,{0,1}}, {{s,-s,-s},w,{0,0}},{{-s,-s,-s},w,{1,0}},{{-s,s,-s},w,{1,1}},{{s,s,-s},w,{0,1}}, {{-s,s,s},w,{0,0}},{{s,s,s},w,{1,0}},{{s,s,-s},w,{1,1}},{{-s,s,-s},w,{0,1}}, {{-s,-s,-s},w,{0,0}},{{s,-s,-s},w,{1,0}},{{s,-s,s},w,{1,1}},{{-s,-s,s},w,{0,1}}, {{s,-s,s},w,{0,0}},{{s,-s,-s},w,{1,0}},{{s,s,-s},w,{1,1}},{{s,s,s},w,{0,1}}, {{-s,-s,-s},w,{0,0}},{{-s,-s,s},w,{1,0}},{{-s,s,s},w,{1,1}},{{-s,s,-s},w,{0,1}} }; }
-std::vector<Vertex> createPlayerMesh(float w, float h) { float hw = w/2.0f; glm::vec3 c(1.0f); return { {{-hw,0,hw},c,{0,0}},{{hw,0,hw},c,{1,0}},{{hw,h,hw},c,{1,1}},{{-hw,h,hw},c,{0,1}}, {{hw,0,-hw},c,{0,0}},{{-hw,0,-hw},c,{1,0}},{{-hw,h,-hw},c,{1,1}},{{hw,h,-hw},c,{0,1}}, {{-hw,h,hw},c,{0,0}},{{hw,h,hw},c,{1,0}},{{hw,h,-hw},c,{1,1}},{{-hw,h,-hw},c,{0,1}}, {{-hw,0,-hw},c,{0,0}},{{hw,0,-hw},c,{1,0}},{{hw,0,hw},c,{1,1}},{{-hw,0,hw},c,{0,1}}, {{hw,0,hw},c,{0,0}},{{hw,0,-hw},c,{1,0}},{{hw,h,-hw},c,{1,1}},{{hw,h,hw},c,{0,1}}, {{-hw,0,-hw},c,{0,0}},{{-hw,0,hw},c,{1,0}},{{-hw,h,hw},c,{1,1}},{{-hw,h,-hw},c,{0,1}} }; }
+std::vector<Vertex> createCube(float size) {
+    float s = size / 2.0f; glm::vec3 w(1.0f);
+    return {
+        {{-s,-s,s},w,{0,0},{0,0,1}},{{s,-s,s},w,{1,0},{0,0,1}},{{s,s,s},w,{1,1},{0,0,1}},{{-s,s,s},w,{0,1},{0,0,1}},
+        {{s,-s,-s},w,{0,0},{0,0,-1}},{{-s,-s,-s},w,{1,0},{0,0,-1}},{{-s,s,-s},w,{1,1},{0,0,-1}},{{s,s,-s},w,{0,1},{0,0,-1}},
+        {{-s,s,s},w,{0,0},{0,1,0}},{{s,s,s},w,{1,0},{0,1,0}},{{s,s,-s},w,{1,1},{0,1,0}},{{-s,s,-s},w,{0,1},{0,1,0}},
+        {{-s,-s,-s},w,{0,0},{0,-1,0}},{{s,-s,-s},w,{1,0},{0,-1,0}},{{s,-s,s},w,{1,1},{0,-1,0}},{{-s,-s,s},w,{0,1},{0,-1,0}},
+        {{s,-s,s},w,{0,0},{1,0,0}},{{s,-s,-s},w,{1,0},{1,0,0}},{{s,s,-s},w,{1,1},{1,0,0}},{{s,s,s},w,{0,1},{1,0,0}},
+        {{-s,-s,-s},w,{0,0},{-1,0,0}},{{-s,-s,s},w,{1,0},{-1,0,0}},{{-s,s,s},w,{1,1},{-1,0,0}},{{-s,s,-s},w,{0,1},{-1,0,0}}
+    };
+}
+
+std::vector<Vertex> createPlayerMesh(float w, float h) {
+    float hw = w/2.0f; glm::vec3 c(1.0f);
+    return {
+        {{-hw,0,hw},c,{0,0},{0,0,1}},{{hw,0,hw},c,{1,0},{0,0,1}},{{hw,h,hw},c,{1,1},{0,0,1}},{{-hw,h,hw},c,{0,1},{0,0,1}},
+        {{hw,0,-hw},c,{0,0},{0,0,-1}},{{-hw,0,-hw},c,{1,0},{0,0,-1}},{{-hw,h,-hw},c,{1,1},{0,0,-1}},{{hw,h,-hw},c,{0,1},{0,0,-1}},
+        {{-hw,h,hw},c,{0,0},{0,1,0}},{{hw,h,hw},c,{1,0},{0,1,0}},{{hw,h,-hw},c,{1,1},{0,1,0}},{{-hw,h,-hw},c,{0,1},{0,1,0}},
+        {{-hw,0,-hw},c,{0,0},{0,-1,0}},{{hw,0,-hw},c,{1,0},{0,-1,0}},{{hw,0,hw},c,{1,1},{0,-1,0}},{{-hw,0,hw},c,{0,1},{0,-1,0}},
+        {{hw,0,hw},c,{0,0},{1,0,0}},{{hw,0,-hw},c,{1,0},{1,0,0}},{{hw,h,-hw},c,{1,1},{1,0,0}},{{hw,h,hw},c,{0,1},{1,0,0}},
+        {{-hw,0,-hw},c,{0,0},{-1,0,0}},{{-hw,0,hw},c,{1,0},{-1,0,0}},{{-hw,h,hw},c,{1,1},{-1,0,0}},{{-hw,h,-hw},c,{0,1},{-1,0,0}}
+    };
+}
+
 std::vector<uint32_t> createBoxIndices(uint32_t base) { std::vector<uint32_t> idx; for (int f = 0; f < 6; f++) { uint32_t b = base + f * 4; idx.insert(idx.end(), {b, b+1, b+2, b, b+2, b+3}); } return idx; }
 
 struct MeshInfo { uint32_t indexStart, indexCount; int32_t vertexOffset; };
@@ -85,7 +107,9 @@ class Application {
 public:
     void run() { initWindow(); initVulkan(); mainLoop(); cleanup(); }
 private:
-    GLFWwindow* m_window = nullptr; VulkanContext m_context; VulkanSwapchain m_swapchain; DescriptorManager m_descriptors; VulkanPipeline m_pipeline;
+    GLFWwindow* m_window = nullptr; VulkanContext m_context; VulkanSwapchain m_swapchain; DescriptorManager m_descriptors;
+    VulkanPipeline m_skyPipeline;
+    VulkanPipeline m_litPipeline;
     VulkanBuffer m_terrainVB, m_terrainIB; uint32_t m_terrainIndexCount = 0; VulkanBuffer m_staticVB, m_staticIB; std::vector<MeshInfo> m_meshes;
     VulkanTexture m_groundTexture, m_stoneTexture, m_playerTexture; uint32_t m_groundMaterial = 0, m_stoneMaterial = 0, m_playerMaterial = 0;
     std::vector<VkCommandBuffer> m_commandBuffers; std::vector<VkSemaphore> m_imageAvailable, m_renderFinished; std::vector<VkFence> m_inFlight;
@@ -93,10 +117,17 @@ private:
     World m_world; ChunkManager m_chunks; RegionStateMachine m_regions;
     bool m_mouseCaptured = true; float m_scrollDelta = 0.0f; Timer m_timer; float m_logTimer = 0.0f, m_totalPlayTime = 0.0f;
     RegionVisuals m_currentVisuals; RegionState m_lastLoggedState = RegionState::Stable;
+    
+    glm::vec3 m_sunDirection = glm::normalize(glm::vec3(0.5f, -0.8f, 0.3f));
+    float m_sunIntensity = 1.2f;
+    glm::vec3 m_sunColor = glm::vec3(1.0f, 0.95f, 0.8f);
+    float m_ambientIntensity = 0.3f;
+    glm::vec3 m_skyColorTop = glm::vec3(0.4f, 0.6f, 0.9f);
+    glm::vec3 m_skyColorBottom = glm::vec3(0.7f, 0.8f, 0.95f);
 
     void initWindow() {
         glfwInit(); glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Textured", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Lit World", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) { reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true; });
         glfwSetScrollCallback(m_window, [](GLFWwindow* w, double, double y) { reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_scrollDelta = static_cast<float>(y); });
@@ -105,13 +136,14 @@ private:
     }
 
     void initVulkan() {
-        Logger::info("=== MYTHBREAKER ENGINE ==="); Logger::info("Version 0.2.0 - Milestone 9: Textures");
+        Logger::info("=== MYTHBREAKER ENGINE ==="); Logger::info("Version 0.3.0 - Milestone 10: Skybox & Lighting");
         m_context.init(m_window); m_swapchain.init(&m_context, m_window); m_descriptors.init(&m_context);
-        m_pipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/textured.vert.spv", "shaders/textured.frag.spv");
+        m_skyPipeline.initSky(&m_context, &m_swapchain, &m_descriptors, "shaders/sky.vert.spv", "shaders/sky.frag.spv");
+        m_litPipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/lit.vert.spv", "shaders/lit.frag.spv");
         m_currentVisuals = RegionVisuals::forState(RegionState::Stable);
         createTextures(); createMeshes(); createEntities(); createSyncObjects();
         m_chunks.update(glm::vec3(0)); rebuildTerrain();
-        Logger::info("Engine initialized with textures"); Logger::info("F5 = Save | F9 = Load");
+        Logger::info("Engine initialized with lighting"); Logger::info("F5 = Save | F9 = Load");
     }
 
     void createTextures() {
@@ -127,7 +159,6 @@ private:
         std::vector<uint8_t> playerPixels(64 * 64 * 4);
         for (int i = 0; i < 64 * 64; i++) { float n = (rng() % 20) / 100.0f; playerPixels[i*4+0] = static_cast<uint8_t>(220 + n * 20); playerPixels[i*4+1] = static_cast<uint8_t>(180 + n * 20); playerPixels[i*4+2] = static_cast<uint8_t>(140 + n * 20); playerPixels[i*4+3] = 255; }
         m_playerTexture.loadFromMemory(&m_context, playerPixels.data(), 64, 64); m_playerMaterial = m_descriptors.createMaterial(m_playerTexture);
-        Logger::info("Created 3 materials");
     }
 
     void createMeshes() {
@@ -207,39 +238,65 @@ private:
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
-    void updateCameraUBO() { auto ext = m_swapchain.extent(); CameraUBO ubo{}; ubo.view = getCameraViewMatrix(m_world); ubo.proj = glm::perspective(glm::radians(60.0f), float(ext.width)/float(ext.height), 0.1f, 500.0f); ubo.proj[1][1] *= -1; ubo.viewProj = ubo.proj * ubo.view; ubo.cameraPos = getCameraPosition(m_world); ubo.time = m_timer.totalTime(); m_descriptors.updateCameraUBO(m_currentFrame, ubo); }
+    void updateCameraUBO() {
+        auto ext = m_swapchain.extent(); CameraUBO ubo{};
+        ubo.view = getCameraViewMatrix(m_world);
+        ubo.proj = glm::perspective(glm::radians(60.0f), float(ext.width)/float(ext.height), 0.1f, 500.0f);
+        ubo.proj[1][1] *= -1;
+        ubo.viewProj = ubo.proj * ubo.view;
+        ubo.cameraPos = getCameraPosition(m_world);
+        ubo.time = m_timer.totalTime();
+        ubo.sunDirection = m_sunDirection;
+        ubo.sunIntensity = m_sunIntensity;
+        ubo.sunColor = m_sunColor;
+        ubo.ambientIntensity = m_ambientIntensity;
+        ubo.skyColorTop = m_skyColorTop;
+        ubo.skyColorBottom = m_skyColorBottom;
+        m_descriptors.updateCameraUBO(m_currentFrame, ubo);
+    }
 
     void recordCommandBuffer(VkCommandBuffer cmd, uint32_t imageIndex) {
         vkResetCommandBuffer(cmd, 0); VkCommandBufferBeginInfo bi{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO}; vkBeginCommandBuffer(cmd, &bi);
-        auto ext = m_swapchain.extent(); std::array<VkClearValue, 2> clears{}; clears[0].color = {{m_currentVisuals.skyColor.r, m_currentVisuals.skyColor.g, m_currentVisuals.skyColor.b, 1.0f}}; clears[1].depthStencil = {1.0f, 0};
+        auto ext = m_swapchain.extent(); std::array<VkClearValue, 2> clears{}; clears[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}}; clears[1].depthStencil = {1.0f, 0};
         VkRenderPassBeginInfo rpi{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO}; rpi.renderPass = m_swapchain.renderPass(); rpi.framebuffer = m_swapchain.framebuffer(imageIndex); rpi.renderArea = {{0,0}, ext}; rpi.clearValueCount = 2; rpi.pClearValues = clears.data();
-        vkCmdBeginRenderPass(cmd, &rpi, VK_SUBPASS_CONTENTS_INLINE); vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.pipeline());
+        vkCmdBeginRenderPass(cmd, &rpi, VK_SUBPASS_CONTENTS_INLINE);
+        
         VkViewport vp{0,0,float(ext.width),float(ext.height),0,1}; vkCmdSetViewport(cmd, 0, 1, &vp); VkRect2D sc{{0,0}, ext}; vkCmdSetScissor(cmd, 0, 1, &sc);
+        
+        // Draw sky first
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_skyPipeline.pipeline());
+        VkDescriptorSet ds = m_descriptors.descriptorSet(m_currentFrame);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_skyPipeline.pipelineLayout(), 0, 1, &ds, 0, nullptr);
+        vkCmdDraw(cmd, 3, 1, 0, 0);
+        
+        // Draw lit geometry
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_litPipeline.pipeline());
         PushConstants push{};
         
+        // Terrain
         if (m_terrainIndexCount > 0) {
-            m_descriptors.bindMaterial(cmd, m_pipeline.pipelineLayout(), m_currentFrame, m_groundMaterial);
+            m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_groundMaterial);
             VkBuffer tb[] = {m_terrainVB.buffer()}; VkDeviceSize to[] = {0}; vkCmdBindVertexBuffers(cmd, 0, 1, tb, to); vkCmdBindIndexBuffer(cmd, m_terrainIB.buffer(), 0, VK_INDEX_TYPE_UINT32);
-            push.model = glm::mat4(1.0f); vkCmdPushConstants(cmd, m_pipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+            push.model = glm::mat4(1.0f); vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
             vkCmdDrawIndexed(cmd, m_terrainIndexCount, 1, 0, 0, 0);
         }
         
         VkBuffer sb[] = {m_staticVB.buffer()}; VkDeviceSize so[] = {0}; vkCmdBindVertexBuffers(cmd, 0, 1, sb, so); vkCmdBindIndexBuffer(cmd, m_staticIB.buffer(), 0, VK_INDEX_TYPE_UINT32);
         
-        m_descriptors.bindMaterial(cmd, m_pipeline.pipelineLayout(), m_currentFrame, m_stoneMaterial);
-        m_world.landmarkTags.each([&](Entity e, const LandmarkTag&) { const auto* t = m_world.transforms.tryGet(e); const auto* r = m_world.renderables.tryGet(e); if (!t || !r || !r->visible) return; push.model = t->getMatrix(); vkCmdPushConstants(cmd, m_pipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push); vkCmdDrawIndexed(cmd, r->indexCount, 1, r->indexStart, r->vertexOffset, 0); });
+        // Landmarks
+        m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_stoneMaterial);
+        m_world.landmarkTags.each([&](Entity e, const LandmarkTag&) { const auto* t = m_world.transforms.tryGet(e); const auto* r = m_world.renderables.tryGet(e); if (!t || !r || !r->visible) return; push.model = t->getMatrix(); vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push); vkCmdDrawIndexed(cmd, r->indexCount, 1, r->indexStart, r->vertexOffset, 0); });
         
-        m_descriptors.bindMaterial(cmd, m_pipeline.pipelineLayout(), m_currentFrame, m_playerMaterial);
-        if (m_world.playerEntity != NULL_ENTITY) { const auto* t = m_world.transforms.tryGet(m_world.playerEntity); const auto* r = m_world.renderables.tryGet(m_world.playerEntity); if (t && r && r->visible) { push.model = t->getMatrix(); vkCmdPushConstants(cmd, m_pipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push); vkCmdDrawIndexed(cmd, r->indexCount, 1, r->indexStart, r->vertexOffset, 0); } }
+        // Player
+        m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_playerMaterial);
+        if (m_world.playerEntity != NULL_ENTITY) { const auto* t = m_world.transforms.tryGet(m_world.playerEntity); const auto* r = m_world.renderables.tryGet(m_world.playerEntity); if (t && r && r->visible) { push.model = t->getMatrix(); vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push); vkCmdDrawIndexed(cmd, r->indexCount, 1, r->indexStart, r->vertexOffset, 0); } }
         
         vkCmdEndRenderPass(cmd); vkEndCommandBuffer(cmd);
     }
 
     void recreateSwapchain() { int w=0, h=0; glfwGetFramebufferSize(m_window, &w, &h); while (w==0||h==0) { glfwGetFramebufferSize(m_window,&w,&h); glfwWaitEvents(); } vkDeviceWaitIdle(m_context.device()); m_swapchain.recreate(); }
 
-    void cleanup() { m_groundTexture.destroy(); m_stoneTexture.destroy(); m_playerTexture.destroy(); for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) { vkDestroySemaphore(m_context.device(), m_imageAvailable[i], nullptr); vkDestroySemaphore(m_context.device(), m_renderFinished[i], nullptr); vkDestroyFence(m_context.device(), m_inFlight[i], nullptr); } m_terrainIB.destroy(); m_terrainVB.destroy(); m_staticIB.destroy(); m_staticVB.destroy(); m_pipeline.destroy(); m_descriptors.destroy(); m_swapchain.destroy(); m_context.destroy(); glfwDestroyWindow(m_window); glfwTerminate(); }
+    void cleanup() { m_groundTexture.destroy(); m_stoneTexture.destroy(); m_playerTexture.destroy(); for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) { vkDestroySemaphore(m_context.device(), m_imageAvailable[i], nullptr); vkDestroySemaphore(m_context.device(), m_renderFinished[i], nullptr); vkDestroyFence(m_context.device(), m_inFlight[i], nullptr); } m_terrainIB.destroy(); m_terrainVB.destroy(); m_staticIB.destroy(); m_staticVB.destroy(); m_litPipeline.destroy(); m_skyPipeline.destroy(); m_descriptors.destroy(); m_swapchain.destroy(); m_context.destroy(); glfwDestroyWindow(m_window); glfwTerminate(); }
 };
 
 int main() { try { Application app; app.run(); } catch (const std::exception& e) { Logger::fatal(e.what()); return 1; } return 0; }
-
-
