@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "playTime": 23.9767,
+  "player": {
+    "position": [33.7782, 0, 38.4894],
+    "yaw": 321.445
+  },
+  "camera": {
+    "yaw": 322.049,
+    "pitch": -1.7,
+    "distance": 8
+  },
+  "regions": [
+    {"x": 1, "z": 1, "state": 0, "pressure": 0.150431}
+  ]
+}

@@ -9,7 +9,7 @@ void DescriptorManager::init(VulkanContext* context) {
     createDescriptorSetLayout();
     createDescriptorPool();
     createUniformBuffers();
-    createDescriptorSets();
+    createCameraDescriptorSets();
 }
 
 void DescriptorManager::destroy() {
@@ -22,14 +22,10 @@ void DescriptorManager::destroy() {
 
 void DescriptorManager::createDescriptorSetLayout() {
     std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
-    
-    // Camera UBO
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     bindings[0].descriptorCount = 1;
     bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    
-    // Texture sampler
     bindings[1].binding = 1;
     bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     bindings[1].descriptorCount = 1;
@@ -38,29 +34,25 @@ void DescriptorManager::createDescriptorSetLayout() {
     VkDescriptorSetLayoutCreateInfo layoutInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
     layoutInfo.pBindings = bindings.data();
-    
     vkCreateDescriptorSetLayout(m_context->device(), &layoutInfo, nullptr, &m_descriptorSetLayout);
 }
 
 void DescriptorManager::createDescriptorPool() {
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+    poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT + 100;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT * 10; // Allow multiple textures
+    poolSizes[1].descriptorCount = MAX_FRAMES_IN_FLIGHT + 100;
     
     VkDescriptorPoolCreateInfo poolInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT * 10;
-    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    
+    poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT + 100;
     vkCreateDescriptorPool(m_context->device(), &poolInfo, nullptr, &m_descriptorPool);
 }
 
 void DescriptorManager::createUniformBuffers() {
     VkDeviceSize bufferSize = sizeof(CameraUBO);
-    
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         bufferInfo.size = bufferSize;
@@ -78,7 +70,7 @@ void DescriptorManager::createUniformBuffers() {
     }
 }
 
-void DescriptorManager::createDescriptorSets() {
+void DescriptorManager::createCameraDescriptorSets() {
     std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts;
     layouts.fill(m_descriptorSetLayout);
     
@@ -86,8 +78,7 @@ void DescriptorManager::createDescriptorSets() {
     allocInfo.descriptorPool = m_descriptorPool;
     allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
     allocInfo.pSetLayouts = layouts.data();
-    
-    vkAllocateDescriptorSets(m_context->device(), &allocInfo, m_descriptorSets.data());
+    vkAllocateDescriptorSets(m_context->device(), &allocInfo, m_cameraDescriptorSets.data());
     
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo{};
@@ -96,13 +87,12 @@ void DescriptorManager::createDescriptorSets() {
         bufferInfo.range = sizeof(CameraUBO);
         
         VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        write.dstSet = m_descriptorSets[i];
+        write.dstSet = m_cameraDescriptorSets[i];
         write.dstBinding = 0;
         write.dstArrayElement = 0;
         write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         write.descriptorCount = 1;
         write.pBufferInfo = &bufferInfo;
-        
         vkUpdateDescriptorSets(m_context->device(), 1, &write, 0, nullptr);
     }
 }
@@ -111,21 +101,64 @@ void DescriptorManager::updateCameraUBO(uint32_t frameIndex, const CameraUBO& ub
     memcpy(m_uniformMapped[frameIndex], &ubo, sizeof(CameraUBO));
 }
 
-void DescriptorManager::bindTexture(uint32_t frameIndex, const VulkanTexture& texture) {
+uint32_t DescriptorManager::createMaterial(const VulkanTexture& texture) {
+    VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+    allocInfo.descriptorPool = m_descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &m_descriptorSetLayout;
+    
+    VkDescriptorSet materialSet;
+    vkAllocateDescriptorSets(m_context->device(), &allocInfo, &materialSet);
+    
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = m_uniformBuffers[0];
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(CameraUBO);
+    
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     imageInfo.imageView = texture.view();
     imageInfo.sampler = texture.sampler();
     
-    VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-    write.dstSet = m_descriptorSets[frameIndex];
-    write.dstBinding = 1;
-    write.dstArrayElement = 0;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    write.descriptorCount = 1;
-    write.pImageInfo = &imageInfo;
+    std::array<VkWriteDescriptorSet, 2> writes{};
+    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[0].dstSet = materialSet;
+    writes[0].dstBinding = 0;
+    writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    writes[0].descriptorCount = 1;
+    writes[0].pBufferInfo = &bufferInfo;
     
+    writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[1].dstSet = materialSet;
+    writes[1].dstBinding = 1;
+    writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[1].descriptorCount = 1;
+    writes[1].pImageInfo = &imageInfo;
+    
+    vkUpdateDescriptorSets(m_context->device(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
+    
+    uint32_t materialId = static_cast<uint32_t>(m_materialSets.size());
+    m_materialSets.push_back(materialSet);
+    return materialId;
+}
+
+void DescriptorManager::bindMaterial(VkCommandBuffer cmd, VkPipelineLayout layout, uint32_t frameIndex, uint32_t materialId) {
+    if (materialId >= m_materialSets.size()) return;
+    
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = m_uniformBuffers[frameIndex];
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(CameraUBO);
+    
+    VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    write.dstSet = m_materialSets[materialId];
+    write.dstBinding = 0;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    write.descriptorCount = 1;
+    write.pBufferInfo = &bufferInfo;
     vkUpdateDescriptorSets(m_context->device(), 1, &write, 0, nullptr);
+    
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &m_materialSets[materialId], 0, nullptr);
 }
 
 } // namespace vk
