@@ -7,60 +7,51 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-foreach(CONFIG_TYPE ${CMAKE_CONFIGURATION_TYPES})
-    string(TOUPPER ${CONFIG_TYPE} CONFIG_TYPE_UPPER)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG_TYPE_UPPER} ${CMAKE_BINARY_DIR}/bin)
-endforeach()
-
+# Vulkan
 find_package(Vulkan REQUIRED)
-message(STATUS "Vulkan: ${Vulkan_INCLUDE_DIRS}")
 
-find_program(GLSLC_EXECUTABLE glslc HINTS "$ENV{VULKAN_SDK}/Bin")
-if(NOT GLSLC_EXECUTABLE)
-    message(FATAL_ERROR "glslc not found!")
-endif()
-
+# GLFW
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(third_party/glfw)
 
-add_library(glm INTERFACE)
-target_include_directories(glm INTERFACE ${CMAKE_SOURCE_DIR}/third_party/glm)
-target_compile_definitions(glm INTERFACE GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_ENABLE_EXPERIMENTAL)
-
-add_library(vma INTERFACE)
-target_include_directories(vma INTERFACE ${CMAKE_SOURCE_DIR}/third_party/vma)
-
-add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE ${CMAKE_SOURCE_DIR}/third_party/stb)
-
-add_library(tinyobjloader INTERFACE)
-target_include_directories(tinyobjloader INTERFACE ${CMAKE_SOURCE_DIR}/third_party/tinyobjloader)
-
-set(SHADER_BIN_DIR ${CMAKE_SOURCE_DIR}/shaders/bin)
-if(NOT EXISTS ${SHADER_BIN_DIR}/basic.vert.spv OR NOT EXISTS ${SHADER_BIN_DIR}/basic.frag.spv)
-    message(FATAL_ERROR "Shaders not compiled! Run: .\\scripts\\compile_shaders.ps1")
-endif()
-
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
-
-add_executable(Mythbreaker ${SOURCES})
-
-target_include_directories(Mythbreaker PRIVATE ${CMAKE_SOURCE_DIR}/src ${Vulkan_INCLUDE_DIRS})
-
-target_link_libraries(Mythbreaker PRIVATE Vulkan::Vulkan glfw glm vma stb tinyobjloader)
-
-if(WIN32)
-    target_compile_definitions(Mythbreaker PRIVATE VK_USE_PLATFORM_WIN32_KHR NOMINMAX WIN32_LEAN_AND_MEAN)
-endif()
-
-target_compile_definitions(Mythbreaker PRIVATE $<$<CONFIG:Debug>:MYTHBREAKER_DEBUG MYTHBREAKER_VALIDATION_LAYERS>)
-
-add_custom_command(TARGET Mythbreaker POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:Mythbreaker>/shaders
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${SHADER_BIN_DIR} $<TARGET_FILE_DIR:Mythbreaker>/shaders
+# Include directories
+include_directories(
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/third_party/glm
+    ${CMAKE_SOURCE_DIR}/third_party/vma
+    ${CMAKE_SOURCE_DIR}/third_party/stb
+    ${CMAKE_SOURCE_DIR}/third_party/tinyobjloader
+    ${Vulkan_INCLUDE_DIRS}
 )
 
-message(STATUS "Mythbreaker configured!")
+# Source files
+set(ENGINE_SOURCES
+    src/engine/Logger.cpp
+    src/engine/Timer.cpp
+    src/engine/Input.cpp
+    src/engine/vulkan/VulkanContext.cpp
+    src/engine/vulkan/VulkanSwapchain.cpp
+    src/engine/vulkan/VulkanPipeline.cpp
+    src/engine/vulkan/VulkanBuffer.cpp
+    src/engine/vulkan/VulkanDescriptors.cpp
+    src/engine/vulkan/VulkanTexture.cpp
+)
+
+set(APP_SOURCES
+    src/app/main.cpp
+)
+
+# Executable
+add_executable(Mythbreaker ${ENGINE_SOURCES} ${APP_SOURCES})
+
+target_link_libraries(Mythbreaker
+    Vulkan::Vulkan
+    glfw
+)
+
+# Copy shaders check
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/shaders/bin/basic.vert.spv")
+    message(WARNING "Shaders not compiled! Run scripts/compile_shaders.ps1")
+endif()

@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "VulkanTypes.h"
 #include "VulkanContext.h"
-#include "VulkanBuffer.h"
+#include "VulkanTypes.h"
+#include "VulkanTexture.h"
 #include <array>
 
 namespace myth {
@@ -14,22 +14,25 @@ public:
     void destroy();
     
     void updateCameraUBO(uint32_t frameIndex, const CameraUBO& ubo);
+    void bindTexture(uint32_t frameIndex, const VulkanTexture& texture);
     
-    VkDescriptorSetLayout descriptorSetLayout() const { return m_layout; }
-    VkDescriptorSet descriptorSet(uint32_t frameIndex) const { return m_sets[frameIndex]; }
+    VkDescriptorSetLayout descriptorSetLayout() const { return m_descriptorSetLayout; }
+    VkDescriptorSet descriptorSet(uint32_t frameIndex) const { return m_descriptorSets[frameIndex]; }
 
 private:
-    void createLayout();
-    void createPool();
-    void createUniformBuffers();
+    void createDescriptorSetLayout();
+    void createDescriptorPool();
     void createDescriptorSets();
-
+    void createUniformBuffers();
+    
     VulkanContext* m_context = nullptr;
-    VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;
-    VkDescriptorPool m_pool = VK_NULL_HANDLE;
-    std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> m_sets{};
-    std::array<VulkanBuffer, MAX_FRAMES_IN_FLIGHT> m_uniformBuffers;
-    std::array<void*, MAX_FRAMES_IN_FLIGHT> m_mappedBuffers{};
+    VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
+    VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
+    std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> m_descriptorSets;
+    
+    std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> m_uniformBuffers;
+    std::array<VmaAllocation, MAX_FRAMES_IN_FLIGHT> m_uniformAllocations;
+    std::array<void*, MAX_FRAMES_IN_FLIGHT> m_uniformMapped;
 };
 
 } // namespace vk
