@@ -2,6 +2,7 @@
 
 #include "Entity.h"
 #include "Components.h"
+#include "engine/Stats.h"
 
 namespace myth {
 namespace ecs {
@@ -16,6 +17,7 @@ struct World {
     ComponentArray<Renderable> renderables;
     ComponentArray<PlayerController> playerControllers;
     ComponentArray<ThirdPersonCameraController> cameraControllers;
+    ComponentArray<Stats> stats;
     ComponentArray<PlayerTag> playerTags;
     ComponentArray<CameraTag> cameraTags;
     ComponentArray<LandmarkTag> landmarkTags;
@@ -83,6 +85,7 @@ struct World {
         playerTags.remove(e);
         cameraTags.remove(e);
         landmarkTags.remove(e);
+        stats.remove(e);
         entities.destroy(e);
         
         if (e == playerEntity) playerEntity = NULL_ENTITY;
@@ -92,3 +95,5 @@ struct World {
 
 } // namespace ecs
 } // namespace myth
+
+

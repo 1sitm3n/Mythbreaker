@@ -221,7 +221,7 @@ private:
 
     void initWindow() {
         glfwInit(); glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Heightmap Terrain", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Character Stats", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
@@ -236,7 +236,7 @@ private:
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
-        Logger::info("Version 0.4.0 - Milestone 11: Heightmap Terrain");
+        Logger::info("Version 0.5.0 - Milestone 12: Character Stats");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
@@ -320,6 +320,10 @@ private:
         r.indexStart = m_meshes[1].indexStart;
         r.indexCount = m_meshes[1].indexCount;
         r.vertexOffset = m_meshes[1].vertexOffset;
+        
+        // Add stats to player
+        m_world.stats.add(player, Stats{});
+        
         m_world.createCamera(player);
         
         // Place landmarks on terrain
@@ -475,18 +479,39 @@ private:
             
             drawFrame();
             
+            // Update player stats
+            if (m_world.playerEntity != NULL_ENTITY) {
+                if (auto* playerStats = m_world.stats.tryGet(m_world.playerEntity)) {
+                    playerStats->update(dt);
+                }
+            }
+            
             m_logTimer += dt;
             if (m_logTimer >= 3.0f) {
                 if (m_world.playerEntity != NULL_ENTITY) {
                     const auto& pt = m_world.transforms.get(m_world.playerEntity);
                     const auto& rd = m_regions.getCurrentRegionData();
+                    const auto* playerStats = m_world.stats.tryGet(m_world.playerEntity);
+                    
                     if (rd.state != m_lastLoggedState) {
                         Logger::infof("*** REGION: {} -> {} ***", regionStateName(m_lastLoggedState), regionStateName(rd.state));
                         m_lastLoggedState = rd.state;
                     }
-                    Logger::infof("FPS: {:.0f} | Pos: ({:.0f},{:.1f},{:.0f}) | {}: {:.0f}%",
-                        m_timer.fps(), pt.position.x, pt.position.y, pt.position.z,
-                        regionStateName(rd.state), rd.realityPressure * 100.0f);
+                    
+                    if (playerStats) {
+                        if (playerStats->isDead) {
+                            Logger::info("*** YOU ARE DEAD - Press R to respawn ***");
+                        } else {
+                            Logger::infof("HP: {:.0f}/{:.0f} | STA: {:.0f}/{:.0f} | MP: {:.0f}/{:.0f}{}",
+                                playerStats->health, playerStats->maxHealth,
+                                playerStats->stamina, playerStats->maxStamina,
+                                playerStats->mana, playerStats->maxMana,
+                                playerStats->isExhausted ? " [EXHAUSTED]" : "");
+                        }
+                    }
+                    
+                    Logger::infof("FPS: {:.0f} | Pos: ({:.0f},{:.1f},{:.0f})",
+                        m_timer.fps(), pt.position.x, pt.position.y, pt.position.z);
                 }
                 m_logTimer = 0.0f;
             }
@@ -503,6 +528,31 @@ private:
         }
         if (input.isKeyPressed(GLFW_KEY_F5)) saveGame();
         if (input.isKeyPressed(GLFW_KEY_F9)) loadGame();
+        
+        // Debug: F1 = take damage, F2 = heal
+        if (input.isKeyPressed(GLFW_KEY_F1)) {
+            if (auto* s = m_world.stats.tryGet(m_world.playerEntity)) {
+                s->takeDamage(25.0f);
+                Logger::infof("Took 25 damage! HP: {:.0f}/{:.0f}", s->health, s->maxHealth);
+            }
+        }
+        if (input.isKeyPressed(GLFW_KEY_F2)) {
+            if (auto* s = m_world.stats.tryGet(m_world.playerEntity)) {
+                s->heal(25.0f);
+                Logger::infof("Healed 25! HP: {:.0f}/{:.0f}", s->health, s->maxHealth);
+            }
+        }
+        // Respawn when dead
+        if (input.isKeyPressed(GLFW_KEY_R)) {
+            if (auto* s = m_world.stats.tryGet(m_world.playerEntity)) {
+                if (s->isDead) {
+                    s->respawn();
+                    auto& pt = m_world.transforms.get(m_world.playerEntity);
+                    pt.position = glm::vec3(0, m_chunks.getHeightAt(0, 0) + 1.0f, 0);
+                    Logger::info("*** RESPAWNED ***");
+                }
+            }
+        }
     }
 
     void drawFrame() {
@@ -653,6 +703,9 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
 
 
 

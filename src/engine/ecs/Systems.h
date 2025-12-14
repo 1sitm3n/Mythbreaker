@@ -35,8 +35,13 @@ inline void updatePlayerInput(World& world, float dt, bool mouseCaptured,
     if (input.isKeyDown(GLFW_KEY_A)) moveDir -= camRight;
     if (input.isKeyDown(GLFW_KEY_D)) moveDir += camRight;
     
+    auto* stats = world.stats.tryGet(world.playerEntity);
     float speed = controller->moveSpeed;
-    if (input.isKeyDown(GLFW_KEY_LEFT_SHIFT)) speed *= 2.0f;
+    bool isSprinting = false;
+    if (input.isKeyDown(GLFW_KEY_LEFT_SHIFT) && stats && stats->canSprint()) {
+        speed *= 2.0f;
+        isSprinting = true;
+    }
     
     if (glm::length(moveDir) > 0.01f) {
         moveDir = glm::normalize(moveDir);
@@ -48,10 +53,18 @@ inline void updatePlayerInput(World& world, float dt, bool mouseCaptured,
         velocity->linear.z *= 0.85f;
     }
     
-    // Jump
+    // Jump (costs stamina)
     if (input.isKeyPressed(GLFW_KEY_SPACE) && controller->isGrounded) {
-        velocity->linear.y = controller->jumpForce;
-        controller->isGrounded = false;
+        if (!stats || stats->canJump()) {
+            if (stats) stats->useStamina(Stats::JUMP_COST);
+            velocity->linear.y = controller->jumpForce;
+            controller->isGrounded = false;
+        }
+    }
+    
+    // Drain stamina while sprinting
+    if (isSprinting && glm::length(moveDir) > 0.01f && stats) {
+        stats->useStamina(Stats::SPRINT_COST * dt);
     }
 }
 
@@ -138,4 +151,5 @@ inline glm::vec3 getCameraPosition(const World& world) {
 
 } // namespace ecs
 } // namespace myth
+
 
