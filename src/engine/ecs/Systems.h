@@ -78,12 +78,7 @@ inline void updateMovement(World& world, float dt) {
         // Apply velocity
         transform->position += velocity->linear * dt;
         
-        // Ground collision
-        if (transform->position.y <= 0.0f) {
-            transform->position.y = 0.0f;
-            velocity->linear.y = 0.0f;
-            controller.isGrounded = true;
-        }
+        // Ground collision handled externally with terrain height
     });
 }
 
@@ -143,3 +138,4 @@ inline glm::vec3 getCameraPosition(const World& world) {
 
 } // namespace ecs
 } // namespace myth
+
