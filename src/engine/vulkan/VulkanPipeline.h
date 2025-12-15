@@ -15,6 +15,8 @@ public:
               const std::string& vertPath, const std::string& fragPath);
     void initSky(VulkanContext* context, VulkanSwapchain* swapchain, DescriptorManager* descriptors,
                  const std::string& vertPath, const std::string& fragPath);
+    void initUI(VulkanContext* context, VulkanSwapchain* swapchain,
+                const std::string& vertPath, const std::string& fragPath);
     void destroy();
     
     VkPipeline pipeline() const { return m_pipeline; }
@@ -31,4 +33,6 @@ private:
 
 } // namespace vk
 } // namespace myth
+
+
 

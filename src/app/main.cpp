@@ -11,6 +11,7 @@
 #include "engine/vulkan/VulkanContext.h"
 #include "engine/vulkan/VulkanSwapchain.h"
 #include "engine/vulkan/VulkanPipeline.h"
+#include "engine/UI.h"
 #include "engine/vulkan/VulkanBuffer.h"
 #include "engine/vulkan/VulkanDescriptors.h"
 #include "engine/vulkan/VulkanTexture.h"
@@ -199,6 +200,10 @@ public:
 private:
     GLFWwindow* m_window = nullptr; VulkanContext m_context; VulkanSwapchain m_swapchain; DescriptorManager m_descriptors;
     VulkanPipeline m_skyPipeline;
+    VulkanPipeline m_uiPipeline;
+    HUDState m_hud;
+    std::vector<UIVertex> m_uiVertices;
+    VulkanBuffer m_uiVB;
     VulkanPipeline m_litPipeline;
     VulkanBuffer m_terrainVB, m_terrainIB; uint32_t m_terrainIndexCount = 0;
     VulkanBuffer m_staticVB, m_staticIB; std::vector<MeshInfo> m_meshes;
@@ -246,6 +251,8 @@ private:
         m_descriptors.init(&m_context);
         m_skyPipeline.initSky(&m_context, &m_swapchain, &m_descriptors, "shaders/sky.vert.spv", "shaders/sky.frag.spv");
         m_litPipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/lit.vert.spv", "shaders/lit.frag.spv");
+        m_uiPipeline.initUI(&m_context, &m_swapchain, "shaders/ui.vert.spv", "shaders/ui.frag.spv");
+        createUIBuffers();
         m_currentVisuals = RegionVisuals::forState(RegionState::Stable);
         createTextures();
         createMeshes();
@@ -260,6 +267,15 @@ private:
         Logger::info("LMB=Attack|F=Talk|I=Inv|E=Use|Q=Drop|1-5=Slot");
     }
 
+    void createUIBuffers() {
+        // Create UI vertex buffer (dynamic, host-visible)
+        VkBufferCreateInfo bufferInfo{};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = 50000 * sizeof(UIVertex);  // Enough for many quads
+        bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        m_uiVB.create(&m_context, 50000 * sizeof(UIVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    }
+    
     void createTextures() {
         std::mt19937 rng(42);
         std::vector<uint8_t> groundPixels(256 * 256 * 4);
@@ -555,6 +571,177 @@ private:
         return e;
     }
     
+    void drawUIQuad(glm::vec2 pos, glm::vec2 size, glm::vec4 color, float screenW, float screenH) {
+        float x1 = (pos.x / screenW) * 2.0f - 1.0f;
+        float y1 = (pos.y / screenH) * 2.0f - 1.0f;
+        float x2 = ((pos.x + size.x) / screenW) * 2.0f - 1.0f;
+        float y2 = ((pos.y + size.y) / screenH) * 2.0f - 1.0f;
+        
+        m_uiVertices.push_back({{x1, y1}, {0, 0}, color});
+        m_uiVertices.push_back({{x2, y1}, {1, 0}, color});
+        m_uiVertices.push_back({{x2, y2}, {1, 1}, color});
+        m_uiVertices.push_back({{x1, y1}, {0, 0}, color});
+        m_uiVertices.push_back({{x2, y2}, {1, 1}, color});
+        m_uiVertices.push_back({{x1, y2}, {0, 1}, color});
+    }
+    
+    void drawUIBar(glm::vec2 pos, glm::vec2 size, float fill, glm::vec4 fillColor, glm::vec4 bgColor, float screenW, float screenH) {
+        // Background
+        drawUIQuad(pos, size, bgColor, screenW, screenH);
+        // Fill
+        if (fill > 0) {
+            drawUIQuad(pos, {size.x * fill, size.y}, fillColor, screenW, screenH);
+        }
+        // Border
+        glm::vec4 borderColor = {0.2f, 0.2f, 0.2f, 1.0f};
+        float bw = 2.0f;
+        drawUIQuad({pos.x - bw, pos.y - bw}, {size.x + bw*2, bw}, borderColor, screenW, screenH);
+        drawUIQuad({pos.x - bw, pos.y + size.y}, {size.x + bw*2, bw}, borderColor, screenW, screenH);
+        drawUIQuad({pos.x - bw, pos.y}, {bw, size.y}, borderColor, screenW, screenH);
+        drawUIQuad({pos.x + size.x, pos.y}, {bw, size.y}, borderColor, screenW, screenH);
+    }
+    
+    void renderUI(VkCommandBuffer cmd, uint32_t screenW, uint32_t screenH) {
+        m_uiVertices.clear();
+        float w = static_cast<float>(screenW);
+        float h = static_cast<float>(screenH);
+        
+        // Health bar (red)
+        float barW = 200.0f, barH = 20.0f;
+        float margin = 20.0f;
+        drawUIBar({margin, margin}, {barW, barH}, m_hud.healthPercent, 
+                  {0.8f, 0.2f, 0.2f, 1.0f}, {0.3f, 0.1f, 0.1f, 0.8f}, w, h);
+        
+        // Stamina bar (green/yellow)
+        glm::vec4 stamColor = m_hud.isExhausted ? glm::vec4(0.8f, 0.6f, 0.2f, 1.0f) : glm::vec4(0.2f, 0.8f, 0.3f, 1.0f);
+        drawUIBar({margin, margin + barH + 5}, {barW, barH}, m_hud.staminaPercent,
+                  stamColor, {0.1f, 0.2f, 0.1f, 0.8f}, w, h);
+        
+        // Mana bar (blue)
+        drawUIBar({margin, margin + (barH + 5) * 2}, {barW, barH}, m_hud.manaPercent,
+                  {0.2f, 0.3f, 0.9f, 1.0f}, {0.1f, 0.1f, 0.3f, 0.8f}, w, h);
+        
+        // Crosshair
+        if (m_hud.showCrosshair && !m_hud.isDead) {
+            float cx = w / 2.0f;
+            float cy = h / 2.0f;
+            float cSize = 12.0f;
+            float cThick = 2.0f;
+            glm::vec4 cColor = {1, 1, 1, 0.7f};
+            drawUIQuad({cx - cSize, cy - cThick/2}, {cSize * 2, cThick}, cColor, w, h);
+            drawUIQuad({cx - cThick/2, cy - cSize}, {cThick, cSize * 2}, cColor, w, h);
+        }
+        
+        // Interact prompt
+        if (m_hud.showInteractPrompt && !m_hud.isDead) {
+            float promptW = 220.0f;
+            float promptH = 35.0f;
+            float px = (w - promptW) / 2.0f;
+            float py = h / 2.0f - 80.0f;
+            drawUIQuad({px, py}, {promptW, promptH}, {0, 0, 0, 0.7f}, w, h);
+            drawUIQuad({px, py - 2}, {promptW, 2}, {0.4f, 0.6f, 0.9f, 1.0f}, w, h);
+            drawUIQuad({px, py + promptH}, {promptW, 2}, {0.4f, 0.6f, 0.9f, 1.0f}, w, h);
+        }
+        
+        // Dialogue box
+        if (m_hud.showDialogue) {
+            float boxH = 100.0f;
+            float boxMargin = 30.0f;
+            float boxW = w - boxMargin * 2;
+            float by = h - boxH - boxMargin;
+            
+            // Background
+            drawUIQuad({boxMargin, by}, {boxW, boxH}, {0, 0, 0, 0.85f}, w, h);
+            
+            // Border
+            glm::vec4 bCol = {0.5f, 0.4f, 0.3f, 1.0f};
+            drawUIQuad({boxMargin, by - 3}, {boxW, 3}, bCol, w, h);
+            drawUIQuad({boxMargin, by + boxH}, {boxW, 3}, bCol, w, h);
+            drawUIQuad({boxMargin - 3, by}, {3, boxH}, bCol, w, h);
+            drawUIQuad({boxMargin + boxW, by}, {3, boxH}, bCol, w, h);
+            
+            // Speaker name box
+            drawUIQuad({boxMargin + 10, by + 8}, {140, 24}, {0.3f, 0.4f, 0.6f, 0.9f}, w, h);
+        }
+        
+        // Damage flash
+        if (m_hud.showDamageFlash) {
+            float intensity = m_hud.damageFlashTimer / 0.3f;
+            glm::vec4 flashColor = {0.7f, 0.1f, 0.1f, intensity * 0.35f};
+            float edge = 80.0f;
+            drawUIQuad({0, 0}, {w, edge}, flashColor, w, h);
+            drawUIQuad({0, h - edge}, {w, edge}, flashColor, w, h);
+            drawUIQuad({0, 0}, {edge, h}, flashColor, w, h);
+            drawUIQuad({w - edge, 0}, {edge, h}, flashColor, w, h);
+        }
+        
+        // Death overlay
+        if (m_hud.isDead) {
+            drawUIQuad({0, 0}, {w, h}, {0, 0, 0, 0.75f}, w, h);
+            float boxW2 = 350.0f, boxH2 = 80.0f;
+            float bx = (w - boxW2) / 2.0f;
+            float by2 = (h - boxH2) / 2.0f;
+            drawUIQuad({bx, by2}, {boxW2, boxH2}, {0.6f, 0.1f, 0.1f, 0.95f}, w, h);
+            drawUIQuad({bx, by2 - 3}, {boxW2, 3}, {0.9f, 0.2f, 0.2f, 1.0f}, w, h);
+            drawUIQuad({bx, by2 + boxH2}, {boxW2, 3}, {0.9f, 0.2f, 0.2f, 1.0f}, w, h);
+        }
+        
+        // Upload and draw
+        if (!m_uiVertices.empty()) {
+            m_uiVB.copyData(m_uiVertices.data(), m_uiVertices.size() * sizeof(UIVertex));
+            
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_uiPipeline.pipeline());
+            VkBuffer uiBuffers[] = {m_uiVB.buffer()};
+            VkDeviceSize uiOffsets[] = {0};
+            vkCmdBindVertexBuffers(cmd, 0, 1, uiBuffers, uiOffsets);
+            vkCmdDraw(cmd, static_cast<uint32_t>(m_uiVertices.size()), 1, 0, 0);
+        }
+    }
+    
+    void updateHUD(float dt) {
+        // Update player stats display
+        if (auto* stats = m_world.stats.tryGet(m_world.playerEntity)) {
+            m_hud.healthPercent = stats->health / stats->maxHealth;
+            m_hud.staminaPercent = stats->stamina / stats->maxStamina;
+            m_hud.manaPercent = stats->mana / stats->maxMana;
+            m_hud.isExhausted = stats->isExhausted;
+            m_hud.isDead = stats->isDead;
+        }
+        
+        // Update dialogue display
+        m_hud.showDialogue = m_dialogue.isInDialogue;
+        m_hud.dialogueSpeaker = m_dialogue.currentSpeaker;
+        m_hud.dialogueText = m_dialogue.currentText;
+        m_hud.dialogueTimer = m_dialogue.displayTimer;
+        
+        // Check for nearby NPCs for interact prompt
+        m_hud.showInteractPrompt = false;
+        if (auto* playerT = m_world.transforms.tryGet(m_world.playerEntity)) {
+            glm::vec3 playerPos = playerT->position;
+            for (Entity e : m_npcEntities) {
+                auto* t = m_world.transforms.tryGet(e);
+                auto* npc = m_world.npcs.tryGet(e);
+                if (t && npc) {
+                    float dist = glm::length(t->position - playerPos);
+                    if (dist < npc->interactRadius) {
+                        m_hud.showInteractPrompt = true;
+                        m_hud.nearbyNPCName = npc->name;
+                        m_hud.interactText = "Press F to talk to " + npc->name;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Update damage flash
+        if (m_hud.damageFlashTimer > 0) {
+            m_hud.damageFlashTimer -= dt;
+            m_hud.showDamageFlash = true;
+        } else {
+            m_hud.showDamageFlash = false;
+        }
+    }
+    
     void updateNPCs(float dt) {
         for (Entity e : m_npcEntities) {
             auto* npc = m_world.npcs.tryGet(e);
@@ -668,6 +855,7 @@ private:
                         enemy.cooldownTimer = enemy.attackCooldown;
                         Logger::infof("Enemy hit you for {:.0f} damage! HP: {:.0f}/{:.0f}", 
                             enemy.damage, playerStats->health, playerStats->maxHealth);
+                        m_hud.damageFlashTimer = 0.3f;
                     }
                     break;
                     
@@ -939,6 +1127,7 @@ private:
             updateEnemyAI(dt);
             updateNPCs(dt);
             m_dialogue.update(dt);
+            updateHUD(dt);
             
             Input::instance().update();
             
@@ -1197,6 +1386,10 @@ private:
                 vkCmdDrawIndexed(cmd, m_meshes[1].indexCount, 1, m_meshes[1].indexStart, m_meshes[1].vertexOffset, 0);
             }
         }
+
+        // Render UI overlay
+        renderUI(cmd, m_swapchain.extent().width, m_swapchain.extent().height);
+        
         vkCmdEndRenderPass(cmd);
         vkEndCommandBuffer(cmd);
     }
@@ -1229,6 +1422,15 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
 
 
 
