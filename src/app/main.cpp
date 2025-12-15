@@ -12,6 +12,7 @@
 #include "engine/vulkan/VulkanSwapchain.h"
 #include "engine/vulkan/VulkanPipeline.h"
 #include "engine/UI.h"
+#include "engine/Model.h"
 #include "engine/vulkan/VulkanBuffer.h"
 #include "engine/vulkan/VulkanDescriptors.h"
 #include "engine/vulkan/VulkanTexture.h"
@@ -211,6 +212,8 @@ private:
     VulkanTexture m_npcTexture;
     uint32_t m_groundMaterial = 0, m_stoneMaterial = 0, m_playerMaterial = 0, m_enemyMaterial = 0;
     uint32_t m_npcMaterial = 0;
+    ModelManager m_modelManager;
+    std::vector<ModelInstance> m_modelInstances;
     std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkSemaphore> m_imageAvailable, m_renderFinished;
     std::vector<VkFence> m_inFlight;
@@ -263,6 +266,11 @@ private:
         spawnPickups();
         spawnEnemies();
         spawnNPCs();
+        
+        // Initialize model manager and load models
+        m_modelManager.init(&m_context);
+        loadModels();
+
         Logger::info("Terrain: 32m chunks, 16x16 vertices each");
         Logger::info("LMB=Attack|F=Talk|I=Inv|E=Use|Q=Drop|1-5=Slot");
     }
@@ -276,7 +284,34 @@ private:
         m_uiVB.create(&m_context, 50000 * sizeof(UIVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
     
-    void createTextures() {
+    void loadModels() {
+        // Try to load the duck model
+        uint32_t duckId = m_modelManager.loadModel("assets/models/Duck.glb");
+        
+        if (duckId != UINT32_MAX) {
+            Logger::info("Loaded Duck model, creating instances...");
+            
+            // Create a few duck instances scattered around spawn
+            for (int i = 0; i < 5; i++) {
+                ModelInstance inst;
+                inst.modelId = duckId;
+                float x = -20.0f + i * 10.0f;
+                float z = 15.0f + i * 5.0f;
+                float y = m_chunks.getHeightAt(x, z);
+                inst.position = glm::vec3(x, y, z);
+                inst.rotation = glm::vec3(0, i * 72.0f, 0);  // Rotate each duck differently
+                inst.scale = glm::vec3(0.01f);  // Duck model is large, scale down
+                inst.updateTransform();
+                m_modelInstances.push_back(inst);
+            }
+            
+            Logger::info("Created " + std::to_string(m_modelInstances.size()) + " duck instances");
+        } else {
+            Logger::warn("Failed to load Duck.glb - file may be missing");
+        }
+    }
+
+        void createTextures() {
         std::mt19937 rng(42);
         std::vector<uint8_t> groundPixels(256 * 256 * 4);
         for (int i = 0; i < 256 * 256; i++) {
@@ -1386,6 +1421,35 @@ private:
                 vkCmdDrawIndexed(cmd, m_meshes[1].indexCount, 1, m_meshes[1].indexStart, m_meshes[1].vertexOffset, 0);
             }
         }
+          // Render glTF model instances
+          for (const auto& inst : m_modelInstances) {
+              Model* model = m_modelManager.getModel(inst.modelId);
+              if (!model || model->meshes.empty()) continue;
+              
+              // Bind model's vertex and index buffers
+              VkBuffer modelBuffers[] = {model->vertexBuffer};
+              VkDeviceSize modelOffsets[] = {0};
+              vkCmdBindVertexBuffers(cmd, 0, 1, modelBuffers, modelOffsets);
+              vkCmdBindIndexBuffer(cmd, model->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+              
+              // Use stone material for now (models don't have textures loaded yet)
+              m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_stoneMaterial);
+              
+              // Draw each mesh with instance transform
+              for (const auto& mesh : model->meshes) {
+                  push.model = inst.transform;
+                  vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+                  vkCmdDrawIndexed(cmd, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+              }
+          }
+          
+          // Re-bind static buffers for UI or subsequent draws
+          VkBuffer staticBuffers[] = {m_staticVB.buffer()};
+          VkDeviceSize staticOffsets[] = {0};
+          vkCmdBindVertexBuffers(cmd, 0, 1, staticBuffers, staticOffsets);
+          vkCmdBindIndexBuffer(cmd, m_staticIB.buffer(), 0, VK_INDEX_TYPE_UINT32);
+
+
 
         // Render UI overlay
         renderUI(cmd, m_swapchain.extent().width, m_swapchain.extent().height);
@@ -1403,6 +1467,7 @@ private:
     }
 
     void cleanup() {
+        m_modelManager.cleanup();
         m_groundTexture.destroy(); m_stoneTexture.destroy(); m_playerTexture.destroy();
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(m_context.device(), m_imageAvailable[i], nullptr);
@@ -1422,6 +1487,11 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
 
 
 

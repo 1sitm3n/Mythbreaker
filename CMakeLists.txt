@@ -22,6 +22,8 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/glm
     ${CMAKE_SOURCE_DIR}/third_party/vma
     ${CMAKE_SOURCE_DIR}/third_party/stb
+    ${CMAKE_SOURCE_DIR}/third_party/tinygltf
+    ${CMAKE_SOURCE_DIR}/third_party/nlohmann
     ${CMAKE_SOURCE_DIR}/third_party/tinyobjloader
     ${Vulkan_INCLUDE_DIRS}
 )
@@ -34,6 +36,7 @@ set(ENGINE_SOURCES
     src/engine/vulkan/VulkanContext.cpp
     src/engine/vulkan/VulkanSwapchain.cpp
     src/engine/vulkan/VulkanPipeline.cpp
+    src/engine/Model.cpp
     src/engine/vulkan/VulkanBuffer.cpp
     src/engine/vulkan/VulkanDescriptors.cpp
     src/engine/vulkan/VulkanTexture.cpp
@@ -55,3 +58,5 @@ target_link_libraries(Mythbreaker
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/shaders/bin/basic.vert.spv")
     message(WARNING "Shaders not compiled! Run scripts/compile_shaders.ps1")
 endif()
+
+

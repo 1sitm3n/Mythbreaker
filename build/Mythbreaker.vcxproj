@@ -86,7 +86,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /external:I "C:/VulkanSDK/1.4.328.1/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -113,10 +113,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -143,7 +143,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /external:I "C:/VulkanSDK/1.4.328.1/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -171,10 +171,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -201,7 +201,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /external:I "C:/VulkanSDK/1.4.328.1/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -229,10 +229,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -259,7 +259,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /external:I "C:/VulkanSDK/1.4.328.1/include"</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -286,10 +286,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\Projects\Mythbreaker\third_party\glfw\include;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -378,6 +378,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanContext.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanSwapchain.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanPipeline.cpp" />
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\Model.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanBuffer.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanDescriptors.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanTexture.cpp" />

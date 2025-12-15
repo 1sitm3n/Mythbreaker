@@ -19,6 +19,9 @@
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanPipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\Model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

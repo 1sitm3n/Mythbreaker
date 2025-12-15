@@ -64,6 +64,13 @@ struct ThirdPersonCameraController {
 // Tag components (empty, just for identification)
 struct PlayerTag {};
 struct CameraTag {};
+// Reference to a loaded 3D model
+struct ModelRenderable {
+    std::string modelPath;
+    uint32_t meshIndex = 0;  // Which mesh within the model
+    float scale = 1.0f;
+};
+
 struct LandmarkTag {};
 
 // Mesh IDs
@@ -75,3 +82,4 @@ enum class MeshId : uint32_t {
 
 } // namespace ecs
 } // namespace myth
+

@@ -31,6 +31,7 @@ struct World {
     ComponentArray<NPCTag> npcTags;
     ComponentArray<PlayerTag> playerTags;
     ComponentArray<CameraTag> cameraTags;
+    ComponentArray<ModelRenderable> modelRenderables;
     ComponentArray<LandmarkTag> landmarkTags;
     
     // Quick access to special entities
@@ -95,6 +96,7 @@ struct World {
         cameraControllers.remove(e);
         playerTags.remove(e);
         cameraTags.remove(e);
+        modelRenderables.remove(e);
         landmarkTags.remove(e);
         stats.remove(e);
         inventories.remove(e);
@@ -114,6 +116,7 @@ struct World {
 
 } // namespace ecs
 } // namespace myth
+
 
 
 

@@ -69,7 +69,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -79,7 +79,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -89,7 +89,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <Midl>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -99,7 +99,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <Midl>
-      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Projects\Mythbreaker\src;C:\Projects\Mythbreaker\third_party\glm;C:\Projects\Mythbreaker\third_party\vma;C:\Projects\Mythbreaker\third_party\stb;C:\Projects\Mythbreaker\third_party\tinygltf;C:\Projects\Mythbreaker\third_party\nlohmann;C:\Projects\Mythbreaker\third_party\tinyobjloader;C:\VulkanSDK\1.4.328.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
