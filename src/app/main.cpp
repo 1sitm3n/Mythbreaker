@@ -203,12 +203,15 @@ private:
     VulkanBuffer m_terrainVB, m_terrainIB; uint32_t m_terrainIndexCount = 0;
     VulkanBuffer m_staticVB, m_staticIB; std::vector<MeshInfo> m_meshes;
     VulkanTexture m_groundTexture, m_stoneTexture, m_playerTexture, m_enemyTexture;
+    VulkanTexture m_npcTexture;
     uint32_t m_groundMaterial = 0, m_stoneMaterial = 0, m_playerMaterial = 0, m_enemyMaterial = 0;
+    uint32_t m_npcMaterial = 0;
     std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkSemaphore> m_imageAvailable, m_renderFinished;
     std::vector<VkFence> m_inFlight;
     uint32_t m_currentFrame = 0; bool m_framebufferResized = false;
-    World m_world; std::vector<Entity> m_enemyEntities; ChunkManager m_chunks; RegionStateMachine m_regions;
+    World m_world; std::vector<Entity> m_enemyEntities; std::vector<Entity> m_npcEntities;
+    DialogueSystem m_dialogue; ChunkManager m_chunks; RegionStateMachine m_regions;
     bool m_mouseCaptured = true; float m_scrollDelta = 0.0f;
     Timer m_timer; float m_logTimer = 0.0f, m_totalPlayTime = 0.0f;
     RegionVisuals m_currentVisuals; RegionState m_lastLoggedState = RegionState::Stable;
@@ -222,7 +225,7 @@ private:
 
     void initWindow() {
         glfwInit(); glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - Combat", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - NPC & Dialogue", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
@@ -237,7 +240,7 @@ private:
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
-        Logger::info("Version 0.7.0 - Milestone 14: Combat Foundation");
+        Logger::info("Version 0.8.0 - Milestone 15: NPC & Dialogue");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
@@ -252,8 +255,9 @@ private:
         rebuildTerrain();
         spawnPickups();
         spawnEnemies();
+        spawnNPCs();
         Logger::info("Terrain: 32m chunks, 16x16 vertices each");
-        Logger::info("LMB=Attack|I=Inv|E=Use|Q=Drop|1-5=Slot");
+        Logger::info("LMB=Attack|F=Talk|I=Inv|E=Use|Q=Drop|1-5=Slot");
     }
 
     void createTextures() {
@@ -304,6 +308,18 @@ private:
         }
         m_enemyTexture.loadFromMemory(&m_context, enemyPixels.data(), 64, 64);
         m_enemyMaterial = m_descriptors.createMaterial(m_enemyTexture);
+        
+        // NPC texture - blue/cyan for friendly
+        std::vector<uint8_t> npcPixels(64 * 64 * 4);
+        for (int i = 0; i < 64 * 64; i++) {
+            float n = (rng() % 30) / 100.0f;
+            npcPixels[i*4+0] = static_cast<uint8_t>(60 + n * 30);   // R - low
+            npcPixels[i*4+1] = static_cast<uint8_t>(140 + n * 40);  // G - medium
+            npcPixels[i*4+2] = static_cast<uint8_t>(200 + n * 40);  // B - high (blue)
+            npcPixels[i*4+3] = 255;
+        }
+        m_npcTexture.loadFromMemory(&m_context, npcPixels.data(), 64, 64);
+        m_npcMaterial = m_descriptors.createMaterial(m_npcTexture);
     }
 
     void createMeshes() {
@@ -468,6 +484,50 @@ private:
         Logger::infof("Spawned {} enemies", spawns.size());
         Logger::infof("Enemy entity list size: {}", m_enemyEntities.size());
     }
+
+    void spawnNPCs() {
+        struct NPCSpawn { float x, z; int type; };
+        std::vector<NPCSpawn> spawns = {
+            {5, -10, 0},   // Wanderer
+            {-15, -15, 1}, // Merchant
+            {25, 5, 2},    // Sage
+            {-10, 25, 3},  // Guard
+            {0, 35, 4},    // Mystic
+        };
+        
+        for (const auto& spawn : spawns) {
+            spawnNPC(spawn.x, spawn.z, spawn.type);
+        }
+        Logger::infof("Spawned {} NPCs", spawns.size());
+    }
+    
+    Entity spawnNPC(float x, float z, int type) {
+        float h = m_chunks.getHeightAt(x, z) + 1.0f;
+        Entity e = m_world.createEntity(glm::vec3(x, h, z), {0,0,0}, {0.8f, 1.8f, 0.8f});
+        
+        NPC npc;
+        switch (type) {
+            case 0: npc = NPCTemplates::createWanderer(); break;
+            case 1: npc = NPCTemplates::createMerchant(); break;
+            case 2: npc = NPCTemplates::createSage(); break;
+            case 3: npc = NPCTemplates::createGuard(); break;
+            case 4: npc = NPCTemplates::createMystic(); break;
+            default: npc = NPCTemplates::createWanderer(); break;
+        }
+        
+        m_world.npcs.add(e, npc);
+        m_world.npcTags.add(e, NPCTag{});
+        
+        Renderable r;
+        r.meshId = 1; // Player mesh
+        r.indexStart = m_meshes[1].indexStart;
+        r.indexCount = m_meshes[1].indexCount;
+        r.vertexOffset = m_meshes[1].vertexOffset;
+        m_world.renderables.add(e, r);
+        
+        m_npcEntities.push_back(e);
+        return e;
+    }
     
     Entity spawnEnemy(float x, float z, float hp, float dmg) {
         float h = m_chunks.getHeightAt(x, z) + 1.0f;
@@ -495,6 +555,35 @@ private:
         return e;
     }
     
+    void updateNPCs(float dt) {
+        for (Entity e : m_npcEntities) {
+            auto* npc = m_world.npcs.tryGet(e);
+            auto* transform = m_world.transforms.tryGet(e);
+            if (!npc || !transform) continue;
+            
+            npc->update(dt);
+            
+            // Face player if nearby
+            auto* playerT = m_world.transforms.tryGet(m_world.playerEntity);
+            if (playerT) {
+                float dist = glm::length(playerT->position - transform->position);
+                if (dist < npc->interactRadius * 1.5f) {
+                    glm::vec3 toPlayer = playerT->position - transform->position;
+                    float targetYaw = glm::degrees(atan2(toPlayer.x, toPlayer.z));
+                    // Smooth rotation
+                    float diff = targetYaw - transform->rotation.y;
+                    while (diff > 180.0f) diff -= 360.0f;
+                    while (diff < -180.0f) diff += 360.0f;
+                    transform->rotation.y += diff * dt * 3.0f;
+                }
+            }
+            
+            // Apply idle bob
+            float baseHeight = m_chunks.getHeightAt(transform->position.x, transform->position.z) + 0.9f;
+            transform->position.y = baseHeight + npc->idleBobOffset;
+        }
+    }
+
     void updateEnemyAI(float dt) {
         if (m_world.playerEntity == NULL_ENTITY) return;
         const auto& playerPos = m_world.transforms.get(m_world.playerEntity).position;
@@ -613,6 +702,43 @@ private:
         }
     }
     
+    void tryInteractWithNPC() {
+        if (m_dialogue.isInDialogue) {
+            m_dialogue.skipOrAdvance();
+            return;
+        }
+        
+        auto* playerT = m_world.transforms.tryGet(m_world.playerEntity);
+        if (!playerT) return;
+        
+        glm::vec3 playerPos = playerT->position;
+        Entity closestNPC = NULL_ENTITY;
+        float closestDist = 999.0f;
+        
+        for (Entity e : m_npcEntities) {
+            auto* t = m_world.transforms.tryGet(e);
+            auto* npc = m_world.npcs.tryGet(e);
+            if (!t || !npc) continue;
+            
+            float dist = glm::length(t->position - playerPos);
+            if (dist < npc->interactRadius && dist < closestDist) {
+                closestDist = dist;
+                closestNPC = e;
+            }
+        }
+        
+        if (closestNPC != NULL_ENTITY) {
+            auto* npc = m_world.npcs.tryGet(closestNPC);
+            if (npc) {
+                const DialogueLine* line = npc->getNextLine();
+                if (line) {
+                    m_dialogue.startDialogue(closestNPC, line);
+                    Logger::info("[" + line->speaker + "]: " + line->text);
+                }
+            }
+        }
+    }
+
     void playerAttack() {
         if (m_world.playerEntity == NULL_ENTITY) return;
         auto* combat = m_world.combats.tryGet(m_world.playerEntity);
@@ -811,6 +937,8 @@ private:
             
             // Update enemy AI
             updateEnemyAI(dt);
+            updateNPCs(dt);
+            m_dialogue.update(dt);
             
             Input::instance().update();
             
@@ -888,6 +1016,7 @@ private:
         if (input.isKeyPressed(GLFW_KEY_I)) showInventory();
         if (input.isKeyPressed(GLFW_KEY_E)) useSelectedItem();
         if (input.isKeyPressed(GLFW_KEY_Q)) dropSelectedItem();
+        if (input.isKeyPressed(GLFW_KEY_F)) tryInteractWithNPC();
         if (input.isKeyPressed(GLFW_KEY_1)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(0); }
         if (input.isKeyPressed(GLFW_KEY_2)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(1); }
         if (input.isKeyPressed(GLFW_KEY_3)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(2); }
@@ -1057,6 +1186,17 @@ private:
                 vkCmdDrawIndexed(cmd, m_meshes[1].indexCount, 1, m_meshes[1].indexStart, m_meshes[1].vertexOffset, 0);
             }
         }
+
+        // NPCs - blue friendly humanoids
+        m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_npcMaterial);
+        for (Entity e : m_npcEntities) {
+            const auto* t = m_world.transforms.tryGet(e);
+            if (t) {
+                push.model = t->getMatrix();
+                vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+                vkCmdDrawIndexed(cmd, m_meshes[1].indexCount, 1, m_meshes[1].indexStart, m_meshes[1].vertexOffset, 0);
+            }
+        }
         vkCmdEndRenderPass(cmd);
         vkEndCommandBuffer(cmd);
     }
@@ -1089,6 +1229,19 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

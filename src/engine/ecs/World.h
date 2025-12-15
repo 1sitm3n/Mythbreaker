@@ -5,6 +5,7 @@
 #include "engine/Stats.h"
 #include "engine/Inventory.h"
 #include "engine/Combat.h"
+#include "engine/NPC.h"
 
 namespace myth {
 namespace ecs {
@@ -26,6 +27,8 @@ struct World {
     ComponentArray<Health> healths;
     ComponentArray<Enemy> enemies;
     ComponentArray<EnemyTag> enemyTags;
+    ComponentArray<NPC> npcs;
+    ComponentArray<NPCTag> npcTags;
     ComponentArray<PlayerTag> playerTags;
     ComponentArray<CameraTag> cameraTags;
     ComponentArray<LandmarkTag> landmarkTags;
@@ -100,6 +103,8 @@ struct World {
         healths.remove(e);
         enemies.remove(e);
         enemyTags.remove(e);
+        npcs.remove(e);
+        npcTags.remove(e);
         entities.destroy(e);
         
         if (e == playerEntity) playerEntity = NULL_ENTITY;
@@ -109,6 +114,8 @@ struct World {
 
 } // namespace ecs
 } // namespace myth
+
+
 
 
 

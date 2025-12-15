@@ -273,7 +273,7 @@ GLFW_BUILD_TESTS:BOOL=OFF
 GLFW_BUILD_WIN32:BOOL=ON
 
 //Generate installation target
-GLFW_INSTALL:BOOL=OFF
+GLFW_INSTALL:BOOL=ON
 
 //Value Computed by CMake
 GLFW_IS_TOP_LEVEL:STATIC=OFF
@@ -287,9 +287,6 @@ GLFW_SOURCE_DIR:STATIC=C:/Projects/Mythbreaker/third_party/glfw
 
 //Force use of high-performance GPU on hybrid systems
 GLFW_USE_HYBRID_HPG:BOOL=OFF
-
-//Path to a program.
-GLSLC_EXECUTABLE:FILEPATH=C:/VulkanSDK/1.4.328.1/Bin/glslc.exe
 
 //Value Computed by CMake
 Mythbreaker_BINARY_DIR:STATIC=C:/Projects/Mythbreaker/build
