@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include "vulkan/VulkanTypes.h"
+#include "Animation.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -23,14 +24,16 @@ struct ModelMaterial {
     std::string baseColorTexturePath;
 };
 
-// Single mesh within a model - uses engine's Vertex format
+// Single mesh within a model - can be static or skinned
 struct Mesh {
-    std::vector<vk::Vertex> vertices;  // Use engine's Vertex format
+    std::vector<vk::Vertex> vertices;        // Static vertices
+    std::vector<SkinnedVertex> skinnedVertices; // Skinned vertices (if animated)
     std::vector<uint32_t> indices;
     uint32_t materialIndex = 0;
     uint32_t indexCount = 0;
     uint32_t vertexOffset = 0;
     uint32_t indexOffset = 0;
+    bool isSkinned = false;
 };
 
 // Complete model with GPU resources
@@ -39,6 +42,11 @@ struct Model {
     std::string path;
     std::vector<Mesh> meshes;
     std::vector<ModelMaterial> materials;
+    
+    // Skeleton and animations (optional)
+    Skeleton skeleton;
+    std::vector<AnimationClip> animations;
+    bool hasSkeleton = false;
     
     // Bounding box
     glm::vec3 boundsMin = glm::vec3(FLT_MAX);
@@ -62,7 +70,12 @@ struct ModelInstance {
     glm::vec3 scale = glm::vec3(1.0f);
     glm::mat4 transform = glm::mat4(1.0f);
     
+    // Animation state
+    AnimationState animState;
+    std::vector<glm::mat4> jointMatrices;  // Current pose matrices
+    
     void updateTransform();
+    void updateAnimation(float dt, const Model& model);
 };
 
 // Static loader functions

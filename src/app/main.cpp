@@ -285,29 +285,51 @@ private:
     }
     
     void loadModels() {
-        // Try to load the duck model
-        uint32_t duckId = m_modelManager.loadModel("assets/models/Duck.glb");
+        // Load the animated Fox model
+        uint32_t foxId = m_modelManager.loadModel("assets/models/Fox.glb");
         
-        if (duckId != UINT32_MAX) {
-            Logger::info("Loaded Duck model, creating instances...");
+        if (foxId != UINT32_MAX) {
+            Model* foxModel = m_modelManager.getModel(foxId);
             
-            // Create a few duck instances scattered around spawn
-            for (int i = 0; i < 5; i++) {
+            // Create fox instances
+            for (int i = 0; i < 3; i++) {
                 ModelInstance inst;
-                inst.modelId = duckId;
-                float x = -20.0f + i * 10.0f;
-                float z = 15.0f + i * 5.0f;
+                inst.modelId = foxId;
+                float x = 10.0f + i * 8.0f;
+                float z = 20.0f;
                 float y = m_chunks.getHeightAt(x, z);
                 inst.position = glm::vec3(x, y, z);
-                inst.rotation = glm::vec3(0, i * 72.0f, 0);  // Rotate each duck differently
-                inst.scale = glm::vec3(0.01f);  // Duck model is large, scale down
+                inst.rotation = glm::vec3(0, -90.0f + i * 30.0f, 0);
+                inst.scale = glm::vec3(0.05f);  // Fox is large
+                inst.updateTransform();
+                
+                // Start animation if available
+                if (foxModel && !foxModel->animations.empty()) {
+                    inst.animState.clipIndex = 0;
+                    inst.animState.playing = true;
+                    inst.animState.loop = true;
+                    inst.animState.speed = 1.0f;
+                }
+                
+                m_modelInstances.push_back(inst);
+            }
+            Logger::info("Created " + std::to_string(m_modelInstances.size()) + " fox instances");
+        }
+        
+        // Also load Duck
+        uint32_t duckId = m_modelManager.loadModel("assets/models/Duck.glb");
+        if (duckId != UINT32_MAX) {
+            for (int i = 0; i < 3; i++) {
+                ModelInstance inst;
+                inst.modelId = duckId;
+                float x = -15.0f + i * 10.0f;
+                float z = 25.0f;
+                inst.position = glm::vec3(x, m_chunks.getHeightAt(x, z), z);
+                inst.rotation = glm::vec3(0, i * 45.0f, 0);
+                inst.scale = glm::vec3(0.01f);
                 inst.updateTransform();
                 m_modelInstances.push_back(inst);
             }
-            
-            Logger::info("Created " + std::to_string(m_modelInstances.size()) + " duck instances");
-        } else {
-            Logger::warn("Failed to load Duck.glb - file may be missing");
         }
     }
 
@@ -1487,6 +1509,7 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
 
 
 
