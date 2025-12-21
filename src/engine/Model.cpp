@@ -165,6 +165,7 @@ static void loadSkeleton(const tinygltf::Model& gltf, int skinIndex, Model& mode
         joint.parent = -1;
         
         model.skeleton.jointNameToIndex[joint.name] = static_cast<int32_t>(i);
+        model.skeleton.nodeIndexToJoint[nodeIndex] = static_cast<int32_t>(i);
         
         // Find parent
         for (size_t j = 0; j < skin.joints.size(); j++) {
@@ -194,25 +195,10 @@ static void loadAnimations(const tinygltf::Model& gltf, Model& model) {
         for (const auto& channel : anim.channels) {
             if (channel.target_node < 0) continue;
             
-            // Find joint index for this node
-            int jointIndex = -1;
-            const auto& targetNode = gltf.nodes[channel.target_node];
-            auto it = model.skeleton.jointNameToIndex.find(targetNode.name);
-            if (it != model.skeleton.jointNameToIndex.end()) {
-                jointIndex = it->second;
-            } else {
-                // Try to find by node index in skin joints
-                for (const auto& skin : gltf.skins) {
-                    for (size_t i = 0; i < skin.joints.size(); i++) {
-                        if (skin.joints[i] == channel.target_node) {
-                            jointIndex = static_cast<int>(i);
-                            break;
-                        }
-                    }
-                    if (jointIndex >= 0) break;
-                }
-            }
-            if (jointIndex < 0) continue;
+            // Find joint index using node-to-joint map
+            auto nodeIt = model.skeleton.nodeIndexToJoint.find(channel.target_node);
+            if (nodeIt == model.skeleton.nodeIndexToJoint.end()) continue;
+            int jointIndex = nodeIt->second;
             
             const auto& sampler = anim.samplers[channel.sampler];
             const auto& inputAccessor = gltf.accessors[sampler.input];
@@ -395,6 +381,7 @@ bool ModelLoader::loadGLTF(const std::string& path, Model& outModel) {
                     v.position = glm::vec3(positions[i*3], positions[i*3+1], positions[i*3+2]);
                     v.color = matColor;
                     v.texCoord = texcoords ? glm::vec2(texcoords[i*2], texcoords[i*2+1]) : glm::vec2(0);
+                    v._pad2 = glm::vec2(0.0f);
                     v.normal = normals ? glm::vec3(normals[i*3], normals[i*3+1], normals[i*3+2]) : glm::vec3(0,1,0);
                     
                     // Joint indices
@@ -519,37 +506,80 @@ Model* ModelManager::getModel(uint32_t id) {
 }
 
 void ModelManager::uploadModelToGPU(Model& model) {
-    // For now, upload as static vertices (skinned models use same buffer, skinning done in shader)
-    // We upload skinned vertices as regular Vertex for now (will add skinned pipeline later)
-    std::vector<vk::Vertex> allVertices;
+    // Check if model has skinned meshes
+    bool hasSkinned = false;
+    for (const auto& mesh : model.meshes) {
+        if (mesh.isSkinned) { hasSkinned = true; break; }
+    }
+    
     std::vector<uint32_t> allIndices;
-
+    
+    if (hasSkinned) {
+        // Upload as SkinnedVertex (96 bytes each)
+        std::vector<SkinnedVertex> allSkinnedVerts;
+        for (auto& mesh : model.meshes) {
+            mesh.vertexOffset = (uint32_t)allSkinnedVerts.size();
+            mesh.indexOffset = (uint32_t)allIndices.size();
+            for (const auto& sv : mesh.skinnedVertices) {
+                allSkinnedVerts.push_back(sv);
+            }
+            for (uint32_t idx : mesh.indices) allIndices.push_back(idx);
+        }
+        if (allSkinnedVerts.empty()) return;
+        
+        Logger::info("Uploading skinned model: " + std::to_string(allSkinnedVerts.size()) + " verts, " + std::to_string(sizeof(SkinnedVertex)) + " bytes each");
+        
+        VkDeviceSize vbSize = allSkinnedVerts.size() * sizeof(SkinnedVertex);
+        VkDeviceSize ibSize = allIndices.size() * sizeof(uint32_t);
+        
+        auto createBuffer = [this](VkDeviceSize size, VkBufferUsageFlags usage,
+                                    VkBuffer& buffer, VkDeviceMemory& memory) {
+            VkBufferCreateInfo info{}; info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            info.size = size; info.usage = usage; info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            vkCreateBuffer(m_context->device(), &info, nullptr, &buffer);
+            VkMemoryRequirements req; vkGetBufferMemoryRequirements(m_context->device(), buffer, &req);
+            VkPhysicalDeviceMemoryProperties props;
+            vkGetPhysicalDeviceMemoryProperties(m_context->physicalDevice(), &props);
+            uint32_t memType = 0;
+            for (uint32_t i = 0; i < props.memoryTypeCount; i++) {
+                if ((req.memoryTypeBits & (1<<i)) && (props.memoryTypes[i].propertyFlags &
+                    (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))) {
+                    memType = i; break;
+                }
+            }
+            VkMemoryAllocateInfo alloc{}; alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+            alloc.allocationSize = req.size; alloc.memoryTypeIndex = memType;
+            vkAllocateMemory(m_context->device(), &alloc, nullptr, &memory);
+            vkBindBufferMemory(m_context->device(), buffer, memory, 0);
+        };
+        
+        createBuffer(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, model.vertexBuffer, model.vertexMemory);
+        createBuffer(ibSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, model.indexBuffer, model.indexMemory);
+        
+        void* data;
+        vkMapMemory(m_context->device(), model.vertexMemory, 0, vbSize, 0, &data);
+        memcpy(data, allSkinnedVerts.data(), vbSize);
+        vkUnmapMemory(m_context->device(), model.vertexMemory);
+        
+        vkMapMemory(m_context->device(), model.indexMemory, 0, ibSize, 0, &data);
+        memcpy(data, allIndices.data(), ibSize);
+        vkUnmapMemory(m_context->device(), model.indexMemory);
+        return;
+    }
+    
+    // Non-skinned path
+    std::vector<vk::Vertex> allVertices;
     for (auto& mesh : model.meshes) {
         mesh.vertexOffset = (uint32_t)allVertices.size();
         mesh.indexOffset = (uint32_t)allIndices.size();
-        
-        if (mesh.isSkinned) {
-            // Convert skinned to regular for now (animation will be CPU-side initially)
-            for (const auto& sv : mesh.skinnedVertices) {
-                vk::Vertex v;
-                v.position = sv.position;
-                v.color = sv.color;
-                v.texCoord = sv.texCoord;
-                v.normal = sv.normal;
-                allVertices.push_back(v);
-            }
-        } else {
-            allVertices.insert(allVertices.end(), mesh.vertices.begin(), mesh.vertices.end());
-        }
-        
+        allVertices.insert(allVertices.end(), mesh.vertices.begin(), mesh.vertices.end());
         for (uint32_t idx : mesh.indices) allIndices.push_back(idx);
     }
-
     if (allVertices.empty()) return;
-
+    
     VkDeviceSize vbSize = allVertices.size() * sizeof(vk::Vertex);
     VkDeviceSize ibSize = allIndices.size() * sizeof(uint32_t);
-
+    
     auto createBuffer = [this](VkDeviceSize size, VkBufferUsageFlags usage,
                                 VkBuffer& buffer, VkDeviceMemory& memory) {
         VkBufferCreateInfo info{}; info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -570,19 +600,33 @@ void ModelManager::uploadModelToGPU(Model& model) {
         vkAllocateMemory(m_context->device(), &alloc, nullptr, &memory);
         vkBindBufferMemory(m_context->device(), buffer, memory, 0);
     };
-
+    
     createBuffer(vbSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, model.vertexBuffer, model.vertexMemory);
     createBuffer(ibSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, model.indexBuffer, model.indexMemory);
-
+    
     void* data;
     vkMapMemory(m_context->device(), model.vertexMemory, 0, vbSize, 0, &data);
     memcpy(data, allVertices.data(), vbSize);
     vkUnmapMemory(m_context->device(), model.vertexMemory);
-
+    
     vkMapMemory(m_context->device(), model.indexMemory, 0, ibSize, 0, &data);
     memcpy(data, allIndices.data(), ibSize);
     vkUnmapMemory(m_context->device(), model.indexMemory);
+
+
+
+
+
+
+
+
+
 }
 
 } // namespace myth
+
+
+
+
+
 

@@ -206,6 +206,7 @@ private:
     std::vector<UIVertex> m_uiVertices;
     VulkanBuffer m_uiVB;
     VulkanPipeline m_litPipeline;
+    VulkanPipeline m_skinnedPipeline;
     VulkanBuffer m_terrainVB, m_terrainIB; uint32_t m_terrainIndexCount = 0;
     VulkanBuffer m_staticVB, m_staticIB; std::vector<MeshInfo> m_meshes;
     VulkanTexture m_groundTexture, m_stoneTexture, m_playerTexture, m_enemyTexture;
@@ -248,12 +249,24 @@ private:
 
     void initVulkan() {
         Logger::info("=== MYTHBREAKER ENGINE ===");
+        Logger::info("SkinnedVertex size: " + std::to_string(sizeof(SkinnedVertex)));
+        Logger::info("  position offset: " + std::to_string(offsetof(SkinnedVertex, position)));
+        Logger::info("  _pad0 offset: " + std::to_string(offsetof(SkinnedVertex, _pad0)));
+        Logger::info("  color offset: " + std::to_string(offsetof(SkinnedVertex, color)));
+        Logger::info("  _pad1 offset: " + std::to_string(offsetof(SkinnedVertex, _pad1)));
+        Logger::info("  texCoord offset: " + std::to_string(offsetof(SkinnedVertex, texCoord)));
+        Logger::info("  _pad2 offset: " + std::to_string(offsetof(SkinnedVertex, _pad2)));
+        Logger::info("  normal offset: " + std::to_string(offsetof(SkinnedVertex, normal)));
+        Logger::info("  _pad3 offset: " + std::to_string(offsetof(SkinnedVertex, _pad3)));
+        Logger::info("  jointIndices offset: " + std::to_string(offsetof(SkinnedVertex, jointIndices)));
+        Logger::info("  jointWeights offset: " + std::to_string(offsetof(SkinnedVertex, jointWeights)));
         Logger::info("Version 0.8.0 - Milestone 15: NPC & Dialogue");
         m_context.init(m_window);
         m_swapchain.init(&m_context, m_window);
         m_descriptors.init(&m_context);
         m_skyPipeline.initSky(&m_context, &m_swapchain, &m_descriptors, "shaders/sky.vert.spv", "shaders/sky.frag.spv");
         m_litPipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/lit.vert.spv", "shaders/lit.frag.spv");
+        m_skinnedPipeline.initSkinned(&m_context, &m_swapchain, &m_descriptors, "shaders/skinned.vert.spv", "shaders/skinned.frag.spv");
         m_uiPipeline.initUI(&m_context, &m_swapchain, "shaders/ui.vert.spv", "shaders/ui.frag.spv");
         createUIBuffers();
         m_currentVisuals = RegionVisuals::forState(RegionState::Stable);
@@ -393,6 +406,9 @@ private:
         }
         m_npcTexture.loadFromMemory(&m_context, npcPixels.data(), 64, 64);
         m_npcMaterial = m_descriptors.createMaterial(m_npcTexture);
+        
+        // Set a default texture for skinned models
+        m_descriptors.setSkinnedTexture(m_stoneTexture);
     }
 
     void createMeshes() {
@@ -1133,6 +1149,20 @@ private:
         } }
         Logger::infof("Slots: {}/{} | Selected: {}", inv->usedSlots(), Inventory::MAX_SLOTS, inv->selectedSlot());
     }
+    void updateAnimations(float dt) {
+        static bool loggedOnce = false;
+        for (auto& inst : m_modelInstances) {
+            Model* model = m_modelManager.getModel(inst.modelId);
+            if (model && model->hasSkeleton && !model->animations.empty()) {
+                inst.updateAnimation(dt, *model);
+                if (!loggedOnce && !inst.jointMatrices.empty()) {
+                    Logger::info("Animation active: " + std::to_string(inst.jointMatrices.size()) + " joints, time=" + std::to_string(inst.animState.currentTime) + " playing=" + std::string(inst.animState.playing ? "true" : "false") + " clip=" + std::to_string(inst.animState.clipIndex));
+                    loggedOnce = true;
+                }
+            }
+        }
+    }
+
 
     void mainLoop() {
         while (!glfwWindowShouldClose(m_window)) {
@@ -1203,7 +1233,7 @@ private:
                     rebuildTerrain();
                 }
             }
-            
+            updateAnimations(dt);
             drawFrame();
             
             // Update player stats
@@ -1444,7 +1474,8 @@ private:
             }
         }
           // Render glTF model instances
-          for (const auto& inst : m_modelInstances) {
+          static bool loggedSkinned = false;
+          for (auto& inst : m_modelInstances) {
               Model* model = m_modelManager.getModel(inst.modelId);
               if (!model || model->meshes.empty()) continue;
               
@@ -1454,17 +1485,47 @@ private:
               vkCmdBindVertexBuffers(cmd, 0, 1, modelBuffers, modelOffsets);
               vkCmdBindIndexBuffer(cmd, model->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
               
-              // Use stone material for now (models don't have textures loaded yet)
-              m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_stoneMaterial);
-              
-              // Draw each mesh with instance transform
-              for (const auto& mesh : model->meshes) {
-                  push.model = inst.transform;
-                  vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
-                  vkCmdDrawIndexed(cmd, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+              if (model->hasSkeleton && !inst.jointMatrices.empty()) {
+                  if (!loggedSkinned) {
+                      Logger::info("SKINNED RENDER: " + std::to_string(inst.jointMatrices.size()) + " joints");
+                    if (!inst.jointMatrices.empty()) {
+                        const auto& m = inst.jointMatrices[0];
+                        Logger::info("Joint0: diag=[" + std::to_string(m[0][0]) + "," + std::to_string(m[1][1]) + "," + std::to_string(m[2][2]) + "] trans=[" + std::to_string(m[3][0]) + "," + std::to_string(m[3][1]) + "," + std::to_string(m[3][2]) + "]");
+                    }
+                      loggedSkinned = true;
+                  }
+                  // Use skinned pipeline for animated models
+                  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_skinnedPipeline.pipeline());
+                  
+                  // Upload joint matrices for this instance
+                  m_descriptors.updateJointMatrices(m_currentFrame, inst.jointMatrices.data(), 
+                      static_cast<uint32_t>(inst.jointMatrices.size()));
+                  
+                  // Bind skinned descriptor set
+                  m_descriptors.bindSkinnedDescriptor(cmd, m_skinnedPipeline.pipelineLayout(), m_currentFrame);
+                  
+                  // Draw skinned meshes
+                  for (const auto& mesh : model->meshes) {
+                      push.model = inst.transform;
+                      vkCmdPushConstants(cmd, m_skinnedPipeline.pipelineLayout(),
+                          VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+                      vkCmdDrawIndexed(cmd, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+                  }
+                  
+                  // Switch back to lit pipeline for next static model
+                  vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_litPipeline.pipeline());
+              } else {
+                  // Use standard lit pipeline for static models
+                  m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_stoneMaterial);
+                  
+                  for (const auto& mesh : model->meshes) {
+                      push.model = inst.transform;
+                      vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(),
+                          VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+                      vkCmdDrawIndexed(cmd, mesh.indexCount, 1, mesh.indexOffset, mesh.vertexOffset, 0);
+                  }
               }
           }
-          
           // Re-bind static buffers for UI or subsequent draws
           VkBuffer staticBuffers[] = {m_staticVB.buffer()};
           VkDeviceSize staticOffsets[] = {0};
@@ -1498,7 +1559,7 @@ private:
         }
         m_terrainIB.destroy(); m_terrainVB.destroy();
         m_staticIB.destroy(); m_staticVB.destroy();
-        m_litPipeline.destroy(); m_skyPipeline.destroy();
+        m_litPipeline.destroy(); m_skinnedPipeline.destroy(); m_skyPipeline.destroy();
         m_descriptors.destroy(); m_swapchain.destroy(); m_context.destroy();
         glfwDestroyWindow(m_window); glfwTerminate();
     }
@@ -1509,6 +1570,28 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

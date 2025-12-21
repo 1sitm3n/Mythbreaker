@@ -1,10 +1,8 @@
 ﻿#pragma once
-
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <array>
 #include <optional>
-
 #include <stdexcept>
 
 #define VK_CHECK(x, msg) do { if ((x) != VK_SUCCESS) throw std::runtime_error(msg); } while(0)
@@ -70,4 +68,3 @@ struct QueueFamilyIndices {
 
 } // namespace vk
 } // namespace myth
-
