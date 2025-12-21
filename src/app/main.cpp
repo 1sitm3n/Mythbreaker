@@ -17,6 +17,7 @@
 #include "engine/vulkan/VulkanDescriptors.h"
 #include "engine/vulkan/VulkanTexture.h"
 #include "engine/vulkan/ShadowMap.h"
+#include "engine/AudioSystem.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -272,6 +273,20 @@ private:
         m_uiPipeline.initUI(&m_context, &m_swapchain, "shaders/ui.vert.spv", "shaders/ui.frag.spv");
         m_shadowMap.init(&m_context);
         m_descriptors.setShadowMap(m_shadowMap.imageView(), m_shadowMap.sampler());
+        
+        // Initialize audio system
+        AudioSystem::instance().init();
+        AudioSystem::instance().loadSound("attack", "assets/sounds/attack.wav");
+        AudioSystem::instance().loadSound("pickup", "assets/sounds/pickup.wav");
+        AudioSystem::instance().loadSound("hit", "assets/sounds/hit.wav");
+        AudioSystem::instance().loadSound("footstep", "assets/sounds/footstep.wav");
+        
+        // Initialize audio system
+        AudioSystem::instance().init();
+        AudioSystem::instance().loadSound("attack", "assets/sounds/attack.wav");
+        AudioSystem::instance().loadSound("pickup", "assets/sounds/pickup.wav");
+        AudioSystem::instance().loadSound("hit", "assets/sounds/hit.wav");
+        AudioSystem::instance().loadSound("footstep", "assets/sounds/footstep.wav");
         createUIBuffers();
         m_currentVisuals = RegionVisuals::forState(RegionState::Stable);
         createTextures();
@@ -933,6 +948,7 @@ private:
                         Logger::infof("Enemy hit you for {:.0f} damage! HP: {:.0f}/{:.0f}", 
                             enemy.damage, playerStats->health, playerStats->maxHealth);
                         m_hud.damageFlashTimer = 0.3f;
+                        AudioSystem::instance().playSound("hit");
                     }
                     break;
                     
@@ -1037,6 +1053,7 @@ private:
                     enemy.hitFlashTimer = 0.2f;
                     Logger::infof("Hit enemy for {:.0f} damage! Enemy HP: {:.0f}/{:.0f}",
                         combat->damage, health->current, health->max);
+                    AudioSystem::instance().playSound("attack");
                 }
             }
         });
@@ -1086,6 +1103,7 @@ private:
                 if (remaining < pickup.amount) {
                     const auto& def = ItemDatabase::get(pickup.itemId);
                     Logger::infof("Picked up: {} x{}", def.name, pickup.amount - remaining);
+                      AudioSystem::instance().playSound("pickup");
                     if (remaining == 0) { pickup.collected = true; toDestroy.push_back(e); }
                     else { pickup.amount = remaining; }
                 }
@@ -1563,7 +1581,8 @@ private:
     }
 
     void cleanup() {
-        m_shadowMap.cleanup();
+        AudioSystem::instance().shutdown();
+          m_shadowMap.cleanup();
           m_modelManager.cleanup();
         m_groundTexture.destroy(); m_stoneTexture.destroy(); m_playerTexture.destroy();
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -1584,6 +1603,16 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -41,6 +41,7 @@ set(ENGINE_SOURCES
     src/engine/vulkan/VulkanDescriptors.cpp
     src/engine/vulkan/VulkanTexture.cpp
     src/engine/vulkan/ShadowMap.cpp
+    src/engine/AudioSystem.cpp
 )
 
 set(APP_SOURCES
@@ -59,6 +60,7 @@ target_link_libraries(Mythbreaker
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/shaders/bin/basic.vert.spv")
     message(WARNING "Shaders not compiled! Run scripts/compile_shaders.ps1")
 endif()
+
 
 
 
