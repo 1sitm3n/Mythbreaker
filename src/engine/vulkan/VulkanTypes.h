@@ -4,20 +4,20 @@
 #include <array>
 #include <optional>
 #include <stdexcept>
-
 #define VK_CHECK(x, msg) do { if ((x) != VK_SUCCESS) throw std::runtime_error(msg); } while(0)
-
 namespace myth {
 namespace vk {
-
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+constexpr uint32_t SHADOW_MAP_SIZE = 2048;  // Shadow map resolution
+constexpr float SHADOW_NEAR = 1.0f;
+constexpr float SHADOW_FAR = 200.0f;
+constexpr float SHADOW_ORTHO_SIZE = 100.0f;  // Orthographic projection size
 
 struct Vertex {
     glm::vec3 position;
     glm::vec3 color;
     glm::vec2 texCoord;
     glm::vec3 normal;
-    
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription desc{};
         desc.binding = 0;
@@ -25,7 +25,6 @@ struct Vertex {
         desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         return desc;
     }
-    
     static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions() {
         std::array<VkVertexInputAttributeDescription, 4> attrs{};
         attrs[0].binding = 0; attrs[0].location = 0;
@@ -44,6 +43,7 @@ struct CameraUBO {
     glm::mat4 view;
     glm::mat4 proj;
     glm::mat4 viewProj;
+    glm::mat4 lightSpaceMatrix;  // For shadow mapping
     glm::vec3 cameraPos;
     float time;
     glm::vec3 sunDirection;
@@ -51,7 +51,7 @@ struct CameraUBO {
     glm::vec3 sunColor;
     float ambientIntensity;
     glm::vec3 skyColorTop;
-    float padding1;
+    float shadowBias;           // Shadow bias to prevent acne
     glm::vec3 skyColorBottom;
     float padding2;
 };
@@ -65,6 +65,5 @@ struct QueueFamilyIndices {
     std::optional<uint32_t> presentFamily;
     bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
 };
-
 } // namespace vk
 } // namespace myth

@@ -16,6 +16,7 @@
 #include "engine/vulkan/VulkanBuffer.h"
 #include "engine/vulkan/VulkanDescriptors.h"
 #include "engine/vulkan/VulkanTexture.h"
+#include "engine/vulkan/ShadowMap.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -207,6 +208,7 @@ private:
     VulkanBuffer m_uiVB;
     VulkanPipeline m_litPipeline;
     VulkanPipeline m_skinnedPipeline;
+    ShadowMap m_shadowMap;
     VulkanBuffer m_terrainVB, m_terrainIB; uint32_t m_terrainIndexCount = 0;
     VulkanBuffer m_staticVB, m_staticIB; std::vector<MeshInfo> m_meshes;
     VulkanTexture m_groundTexture, m_stoneTexture, m_playerTexture, m_enemyTexture;
@@ -268,6 +270,8 @@ private:
         m_litPipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/lit.vert.spv", "shaders/lit.frag.spv");
         m_skinnedPipeline.initSkinned(&m_context, &m_swapchain, &m_descriptors, "shaders/skinned.vert.spv", "shaders/skinned.frag.spv");
         m_uiPipeline.initUI(&m_context, &m_swapchain, "shaders/ui.vert.spv", "shaders/ui.frag.spv");
+        m_shadowMap.init(&m_context);
+        m_descriptors.setShadowMap(m_shadowMap.imageView(), m_shadowMap.sampler());
         createUIBuffers();
         m_currentVisuals = RegionVisuals::forState(RegionState::Stable);
         createTextures();
@@ -1362,6 +1366,15 @@ private:
         ubo.proj = glm::perspective(glm::radians(60.0f), float(ext.width)/float(ext.height), 0.1f, 500.0f);
         ubo.proj[1][1] *= -1;
         ubo.viewProj = ubo.proj * ubo.view;
+        
+        // Compute light space matrix for shadows
+        glm::vec3 playerPos(0.0f);
+        if (m_world.playerEntity != NULL_ENTITY) {
+            const auto* t = m_world.transforms.tryGet(m_world.playerEntity);
+            if (t) playerPos = t->position;
+        }
+        ubo.lightSpaceMatrix = m_shadowMap.computeLightSpaceMatrix(ubo.sunDirection, playerPos);
+        ubo.shadowBias = 0.002f;
         ubo.cameraPos = getCameraPosition(m_world);
         ubo.time = m_timer.totalTime();
         ubo.sunDirection = m_sunDirection;
@@ -1550,7 +1563,8 @@ private:
     }
 
     void cleanup() {
-        m_modelManager.cleanup();
+        m_shadowMap.cleanup();
+          m_modelManager.cleanup();
         m_groundTexture.destroy(); m_stoneTexture.destroy(); m_playerTexture.destroy();
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(m_context.device(), m_imageAvailable[i], nullptr);
@@ -1570,6 +1584,12 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
 
 
 
