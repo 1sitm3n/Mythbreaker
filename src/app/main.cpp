@@ -222,6 +222,8 @@ private:
     std::vector<VkSemaphore> m_imageAvailable, m_renderFinished;
     std::vector<VkFence> m_inFlight;
     uint32_t m_currentFrame = 0; bool m_framebufferResized = false;
+    float m_footstepTimer = 0.0f;
+    glm::vec3 m_lastPlayerPos = glm::vec3(0.0f);
     World m_world; std::vector<Entity> m_enemyEntities; std::vector<Entity> m_npcEntities;
     DialogueSystem m_dialogue; ChunkManager m_chunks; RegionStateMachine m_regions;
     bool m_mouseCaptured = true; float m_scrollDelta = 0.0f;
@@ -273,21 +275,19 @@ private:
         m_uiPipeline.initUI(&m_context, &m_swapchain, "shaders/ui.vert.spv", "shaders/ui.frag.spv");
         m_shadowMap.init(&m_context);
         m_descriptors.setShadowMap(m_shadowMap.imageView(), m_shadowMap.sampler());
-        
-        // Initialize audio system
-        AudioSystem::instance().init();
-        AudioSystem::instance().loadSound("attack", "assets/sounds/attack.wav");
-        AudioSystem::instance().loadSound("pickup", "assets/sounds/pickup.wav");
-        AudioSystem::instance().loadSound("hit", "assets/sounds/hit.wav");
-        AudioSystem::instance().loadSound("footstep", "assets/sounds/footstep.wav");
-        
-        // Initialize audio system
-        AudioSystem::instance().init();
-        AudioSystem::instance().loadSound("attack", "assets/sounds/attack.wav");
-        AudioSystem::instance().loadSound("pickup", "assets/sounds/pickup.wav");
-        AudioSystem::instance().loadSound("hit", "assets/sounds/hit.wav");
-        AudioSystem::instance().loadSound("footstep", "assets/sounds/footstep.wav");
         createUIBuffers();
+        
+        // Initialize audio system
+        AudioSystem::instance().init();
+        AudioSystem::instance().loadSound("attack", "assets/sounds/attack.wav");
+        AudioSystem::instance().loadSound("pickup", "assets/sounds/pickup.wav");
+        AudioSystem::instance().loadSound("hit", "assets/sounds/hit.wav");
+        AudioSystem::instance().loadSound("footstep", "assets/sounds/footstep.wav");
+        AudioSystem::instance().loadSound("enemy_death", "assets/sounds/enemy_death.wav");
+        AudioSystem::instance().loadSound("ambient", "assets/sounds/ambient.wav");
+        AudioSystem::instance().loadSound("region_change", "assets/sounds/region_change.wav");
+        AudioSystem::instance().playMusic("ambient", 0.3f, true);
+        
         m_currentVisuals = RegionVisuals::forState(RegionState::Stable);
         createTextures();
         createMeshes();
@@ -969,6 +969,7 @@ private:
             if (enemy) {
                 // Respawn at home position
                 Logger::info("Enemy defeated! +10 XP");
+                    AudioSystem::instance().playSound("enemy_death");
                 float x = enemy->homePosition.x;
                 float z = enemy->homePosition.z;
                 auto* health = m_world.healths.tryGet(e);
@@ -1216,8 +1217,20 @@ private:
                     // In the air
                     if (ctrl) ctrl->isGrounded = false;
                 }
+
+                // Footstep sounds while moving
+                glm::vec3 movement = pt.position - m_lastPlayerPos;
+                movement.y = 0;
+                float dist = glm::length(movement);
+                m_lastPlayerPos = pt.position;
+                if (dist > 0.0001f && dist < 0.5f) {
+                    m_footstepTimer -= dt;
+                    if (m_footstepTimer <= 0.0f) {
+                        AudioSystem::instance().playSound("footstep", 0.3f);
+                        m_footstepTimer = 0.15f;
+                    }
+                }
             }
-            
             updateCamera(m_world, dt, m_mouseCaptured,
                 Input::instance().mouseDeltaX(), Input::instance().mouseDeltaY(), m_scrollDelta);
             
@@ -1274,6 +1287,7 @@ private:
                     
                     if (rd.state != m_lastLoggedState) {
                         Logger::infof("*** REGION: {} -> {} ***", regionStateName(m_lastLoggedState), regionStateName(rd.state));
+                          AudioSystem::instance().playSound("region_change", 0.5f);
                         m_lastLoggedState = rd.state;
                     }
                     
@@ -1603,6 +1617,35 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
