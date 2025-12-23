@@ -286,7 +286,7 @@ private:
         AudioSystem::instance().loadSound("enemy_death", "assets/sounds/enemy_death.wav");
         AudioSystem::instance().loadSound("ambient", "assets/sounds/ambient.wav");
         AudioSystem::instance().loadSound("region_change", "assets/sounds/region_change.wav");
-        AudioSystem::instance().playMusic("ambient", 0.3f, true);
+        AudioSystem::instance().playMusic("ambient", 0.6f, true);
         
         m_currentVisuals = RegionVisuals::forState(RegionState::Stable);
         createTextures();
@@ -1617,6 +1617,9 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
 
 
 
