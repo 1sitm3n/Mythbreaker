@@ -19,6 +19,8 @@
 #include "engine/vulkan/ShadowMap.h"
 #include "engine/AudioSystem.h"
 #include "engine/ParticleSystem.h"
+#include "engine/TimeSystem.h"
+#include "engine/WeatherSystem.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -284,6 +286,7 @@ private:
         // Initialize audio system
         AudioSystem::instance().init();
         ParticleSystem::instance().init(2000);
+        WeatherSystem::instance().init();
         AudioSystem::instance().loadSound("attack", "assets/sounds/attack.wav");
         AudioSystem::instance().loadSound("pickup", "assets/sounds/pickup.wav");
         AudioSystem::instance().loadSound("hit", "assets/sounds/hit.wav");
@@ -1319,6 +1322,25 @@ private:
                     rebuildTerrain();
                 }
             }
+            // Update time and weather systems
+            TimeSystem::instance().update(dt);
+            
+            // Get player position and current region state for weather
+            glm::vec3 playerPos(0.0f);
+            int regionState = 0;
+            if (m_world.playerEntity != NULL_ENTITY) {
+                const auto* t = m_world.transforms.tryGet(m_world.playerEntity);
+                if (t) {
+                    playerPos = t->position;
+                    // Get region at player position
+                    int rx = static_cast<int>(floor(playerPos.x / 32.0f));
+                    int rz = static_cast<int>(floor(playerPos.z / 32.0f));
+                    const auto& region = m_regions.getOrCreateRegion({rx, rz});
+                    regionState = static_cast<int>(region.state);
+                }
+            }
+            WeatherSystem::instance().update(dt, playerPos, regionState);
+            
             ParticleSystem::instance().update(dt);
             updateAnimations(dt);
             drawFrame();
@@ -1355,8 +1377,12 @@ private:
                         }
                     }
                     
-                    Logger::infof("FPS: {:.0f} | Pos: ({:.0f},{:.1f},{:.0f})",
-                        m_timer.fps(), pt.position.x, pt.position.y, pt.position.z);
+                    float gameHour = TimeSystem::instance().getHourOfDay();
+                    int dispH = static_cast<int>(gameHour);
+                    int dispM = static_cast<int>((gameHour - dispH) * 60);
+                    const char* timePeriod = (dispH < 6 || dispH >= 19) ? "Night" : (dispH < 12) ? "Morning" : (dispH < 17) ? "Day" : "Evening";
+                    Logger::infof("FPS: {:.0f} | {:02d}:{:02d} {} | Pos: ({:.0f},{:.1f},{:.0f})",
+                        m_timer.fps(), dispH, dispM, timePeriod, pt.position.x, pt.position.y, pt.position.z);
                 }
                 m_logTimer = 0.0f;
             }
@@ -1380,6 +1406,18 @@ private:
         if (input.isKeyPressed(GLFW_KEY_I)) showInventory();
         if (input.isKeyPressed(GLFW_KEY_E)) useSelectedItem();
         if (input.isKeyPressed(GLFW_KEY_Q)) dropSelectedItem();
+        
+        // Time controls - T to toggle fast-forward (10x speed)
+        if (input.isKeyPressed(GLFW_KEY_T)) {
+            auto& ts = TimeSystem::instance();
+            if (ts.getTimeScale() > 1.0f) {
+                ts.setTimeScale(1.0f);
+                myth::Logger::info("Time: Normal speed");
+            } else {
+                ts.setTimeScale(50.0f);
+                myth::Logger::info("Time: Fast-forward (50x)");
+            }
+        }
         if (input.isKeyPressed(GLFW_KEY_F)) tryInteractWithNPC();
         if (input.isKeyPressed(GLFW_KEY_1)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(0); }
         if (input.isKeyPressed(GLFW_KEY_2)) { if (auto* inv = m_world.inventories.tryGet(m_world.playerEntity)) inv->selectSlot(1); }
@@ -1451,22 +1489,37 @@ private:
         ubo.proj[1][1] *= -1;
         ubo.viewProj = ubo.proj * ubo.view;
         
+        // Get time and weather data
+        auto& timeSys = TimeSystem::instance();
+        auto& weatherSys = WeatherSystem::instance();
+        
+        glm::vec3 sunDir = timeSys.getSunDirection();
+        float sunIntensity = timeSys.getSunIntensity();
+        glm::vec3 skyTop = timeSys.getSkyColor() * weatherSys.getSkyTint();
+        glm::vec3 skyBottom = timeSys.getFogColor() * weatherSys.getSkyTint();
+        
         // Compute light space matrix for shadows
         glm::vec3 playerPos(0.0f);
         if (m_world.playerEntity != NULL_ENTITY) {
             const auto* t = m_world.transforms.tryGet(m_world.playerEntity);
             if (t) playerPos = t->position;
         }
+        
+        ubo.sunDirection = sunDir;
         ubo.lightSpaceMatrix = m_shadowMap.computeLightSpaceMatrix(ubo.sunDirection, playerPos);
         ubo.shadowBias = 0.002f;
         ubo.cameraPos = getCameraPosition(m_world);
         ubo.time = m_timer.totalTime();
-        ubo.sunDirection = m_sunDirection;
-        ubo.sunIntensity = m_sunIntensity;
-        ubo.sunColor = m_sunColor;
-        ubo.ambientIntensity = m_ambientIntensity;
-        ubo.skyColorTop = m_skyColorTop;
-        ubo.skyColorBottom = m_skyColorBottom;
+        ubo.sunIntensity = sunIntensity;
+        ubo.sunColor = glm::vec3(1.0f, 0.95f, 0.8f);
+        ubo.ambientIntensity = 0.3f;
+        ubo.skyColorTop = skyTop;
+        ubo.skyColorBottom = skyBottom;
+        ubo.fogDensity = weatherSys.getFogDensity();
+        ubo.fogColor = skyBottom;
+        ubo.lightningFlash = weatherSys.getLightningFlash();
+        ubo.weatherAmbient = weatherSys.getAmbientModifier();
+        
         m_descriptors.updateCameraUBO(m_currentFrame, ubo);
     }
 
@@ -1672,6 +1725,16 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

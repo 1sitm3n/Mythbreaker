@@ -12,7 +12,6 @@ constexpr uint32_t SHADOW_MAP_SIZE = 2048;  // Shadow map resolution
 constexpr float SHADOW_NEAR = 1.0f;
 constexpr float SHADOW_FAR = 200.0f;
 constexpr float SHADOW_ORTHO_SIZE = 100.0f;  // Orthographic projection size
-
 struct Vertex {
     glm::vec3 position;
     glm::vec3 color;
@@ -38,7 +37,6 @@ struct Vertex {
         return attrs;
     }
 };
-
 struct CameraUBO {
     glm::mat4 view;
     glm::mat4 proj;
@@ -53,13 +51,17 @@ struct CameraUBO {
     glm::vec3 skyColorTop;
     float shadowBias;           // Shadow bias to prevent acne
     glm::vec3 skyColorBottom;
+    float fogDensity;           // Fog density for weather effects
+    glm::vec3 fogColor;         // Fog color
+    float lightningFlash;       // Lightning flash intensity (0-1)
+    float weatherAmbient;       // Weather ambient modifier
+    float padding1;
     float padding2;
+    float padding3;
 };
-
 struct PushConstants {
     glm::mat4 model;
 };
-
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;

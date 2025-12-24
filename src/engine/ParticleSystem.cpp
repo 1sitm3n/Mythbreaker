@@ -130,6 +130,16 @@ void ParticleSystem::spawnPickup(const glm::vec3& position, int count) {
     emit(e, count);
 }
 
+void ParticleSystem::spawnRain(const glm::vec3& position, int count) {
+    ParticleEmitter e;
+    e.position = position;
+    e.direction = glm::vec3(0.0f, -1.0f, 0.0f); // Fall DOWN
+    e.spread = 0.1f; e.minSpeed = 8.0f; e.maxSpeed = 12.0f;
+    e.minLife = 1.0f; e.maxLife = 2.0f; e.minSize = 0.3f; e.maxSize = 0.5f;
+    e.startColor = glm::vec4(0.6f, 0.7f, 0.9f, 0.6f); // Blue rain
+    emit(e, count);
+}
+
 void ParticleSystem::spawnBlood(const glm::vec3& position, int count) {
     ParticleEmitter e;
     e.position = position;
@@ -139,5 +149,6 @@ void ParticleSystem::spawnBlood(const glm::vec3& position, int count) {
     e.startColor = glm::vec4(0.7f, 0.1f, 0.1f, 0.9f);
     emit(e, count);
 }
+
 
 

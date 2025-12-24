@@ -62,6 +62,7 @@ public:
     void spawnMagic(const glm::vec3& position, const glm::vec4& color, int count = 20);
     void spawnPickup(const glm::vec3& position, int count = 12);
     void spawnBlood(const glm::vec3& position, int count = 10);
+    void spawnRain(const glm::vec3& position, int count = 5);
     
     const std::vector<Particle>& getParticles() const { return m_particles; }
     size_t getActiveCount() const { return m_activeCount; }
@@ -78,3 +79,4 @@ private:
     size_t m_maxParticles = 2000;
     std::mt19937 m_rng{std::random_device{}()};
 };
+
