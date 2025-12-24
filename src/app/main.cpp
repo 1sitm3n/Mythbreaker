@@ -18,6 +18,7 @@
 #include "engine/vulkan/VulkanTexture.h"
 #include "engine/vulkan/ShadowMap.h"
 #include "engine/AudioSystem.h"
+#include "engine/ParticleSystem.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -207,8 +208,10 @@ private:
     HUDState m_hud;
     std::vector<UIVertex> m_uiVertices;
     VulkanBuffer m_uiVB;
+    VulkanBuffer m_particleVB;
     VulkanPipeline m_litPipeline;
     VulkanPipeline m_skinnedPipeline;
+    VulkanPipeline m_particlePipeline;
     ShadowMap m_shadowMap;
     VulkanBuffer m_terrainVB, m_terrainIB; uint32_t m_terrainIndexCount = 0;
     VulkanBuffer m_staticVB, m_staticIB; std::vector<MeshInfo> m_meshes;
@@ -273,12 +276,14 @@ private:
         m_litPipeline.init(&m_context, &m_swapchain, &m_descriptors, "shaders/lit.vert.spv", "shaders/lit.frag.spv");
         m_skinnedPipeline.initSkinned(&m_context, &m_swapchain, &m_descriptors, "shaders/skinned.vert.spv", "shaders/skinned.frag.spv");
         m_uiPipeline.initUI(&m_context, &m_swapchain, "shaders/ui.vert.spv", "shaders/ui.frag.spv");
+        m_particlePipeline.initParticle(&m_context, &m_swapchain, &m_descriptors, "shaders/particle.vert.spv", "shaders/particle.frag.spv");
         m_shadowMap.init(&m_context);
         m_descriptors.setShadowMap(m_shadowMap.imageView(), m_shadowMap.sampler());
         createUIBuffers();
         
         // Initialize audio system
         AudioSystem::instance().init();
+        ParticleSystem::instance().init(2000);
         AudioSystem::instance().loadSound("attack", "assets/sounds/attack.wav");
         AudioSystem::instance().loadSound("pickup", "assets/sounds/pickup.wav");
         AudioSystem::instance().loadSound("hit", "assets/sounds/hit.wav");
@@ -314,6 +319,10 @@ private:
         bufferInfo.size = 50000 * sizeof(UIVertex);  // Enough for many quads
         bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         m_uiVB.create(&m_context, 50000 * sizeof(UIVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+        // Create particle vertex buffer (2000 particles * 9 floats * 4 bytes)
+        m_particleVB.create(&m_context, 2000 * 9 * sizeof(float), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        Logger::info("Particle vertex buffer created");
     }
     
     void loadModels() {
@@ -693,6 +702,43 @@ private:
         drawUIQuad({pos.x + size.x, pos.y}, {bw, size.y}, borderColor, screenW, screenH);
     }
     
+    void renderParticles(VkCommandBuffer cmd) {
+        const auto& particles = ParticleSystem::instance().getParticles();
+        size_t count = ParticleSystem::instance().getActiveCount();
+        static int debugFrame = 0;
+        if (++debugFrame % 500 == 0) Logger::infof("renderParticles: count={}", count);
+        if (count == 0) return;
+
+        // Build particle vertex data: pos(3) + color(4) + size(1) + rotation(1) = 9 floats per particle
+        std::vector<float> particleData;
+        particleData.reserve(count * 9);
+        for (size_t i = 0; i < count; ++i) {
+            const auto& p = particles[i];
+            particleData.push_back(p.position.x);
+            particleData.push_back(p.position.y);
+            particleData.push_back(p.position.z);
+            particleData.push_back(p.color.r);
+            particleData.push_back(p.color.g);
+            particleData.push_back(p.color.b);
+            particleData.push_back(p.color.a);
+            particleData.push_back(p.size);
+            particleData.push_back(p.rotation);
+        }
+
+        m_particleVB.copyData(particleData.data(), particleData.size() * sizeof(float));
+
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_particlePipeline.pipeline());
+        VkDescriptorSet descSet = m_descriptors.descriptorSet(m_currentFrame);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_particlePipeline.pipelineLayout(),
+                                0, 1, &descSet, 0, nullptr);
+
+        VkBuffer particleBuffers[] = {m_particleVB.buffer()};
+        VkDeviceSize particleOffsets[] = {0};
+        vkCmdBindVertexBuffers(cmd, 0, 1, particleBuffers, particleOffsets);
+        
+        // Draw 6 vertices per particle (2 triangles for quad), instanced
+        vkCmdDraw(cmd, 6, static_cast<uint32_t>(count), 0, 0);
+    }
     void renderUI(VkCommandBuffer cmd, uint32_t screenW, uint32_t screenH) {
         m_uiVertices.clear();
         float w = static_cast<float>(screenW);
@@ -948,6 +994,7 @@ private:
                         Logger::infof("Enemy hit you for {:.0f} damage! HP: {:.0f}/{:.0f}", 
                             enemy.damage, playerStats->health, playerStats->maxHealth);
                         m_hud.damageFlashTimer = 0.3f;
+                          ParticleSystem::instance().spawnBlood(playerPos + glm::vec3(0, 1.0f, 0));
                         AudioSystem::instance().playSound("hit");
                     }
                     break;
@@ -970,6 +1017,7 @@ private:
                 // Respawn at home position
                 Logger::info("Enemy defeated! +10 XP");
                     AudioSystem::instance().playSound("enemy_death");
+                  ParticleSystem::instance().spawnBlood(m_world.transforms.get(e).position + glm::vec3(0, 1.0f, 0));
                 float x = enemy->homePosition.x;
                 float z = enemy->homePosition.z;
                 auto* health = m_world.healths.tryGet(e);
@@ -1055,6 +1103,7 @@ private:
                     Logger::infof("Hit enemy for {:.0f} damage! Enemy HP: {:.0f}/{:.0f}",
                         combat->damage, health->current, health->max);
                     AudioSystem::instance().playSound("attack");
+                      ParticleSystem::instance().spawnSparks(transform->position + glm::vec3(0, 1.0f, 0));
                 }
             }
         });
@@ -1105,6 +1154,7 @@ private:
                     const auto& def = ItemDatabase::get(pickup.itemId);
                     Logger::infof("Picked up: {} x{}", def.name, pickup.amount - remaining);
                       AudioSystem::instance().playSound("pickup");
+                        ParticleSystem::instance().spawnPickup(t->position + glm::vec3(0, 0.5f, 0));
                     if (remaining == 0) { pickup.collected = true; toDestroy.push_back(e); }
                     else { pickup.amount = remaining; }
                 }
@@ -1227,6 +1277,7 @@ private:
                     m_footstepTimer -= dt;
                     if (m_footstepTimer <= 0.0f) {
                         AudioSystem::instance().playSound("footstep", 0.3f);
+                        ParticleSystem::instance().spawnDust(pt.position + glm::vec3(0, 0.1f, 0), 3);
                         m_footstepTimer = 0.15f;
                     }
                 }
@@ -1268,6 +1319,7 @@ private:
                     rebuildTerrain();
                 }
             }
+            ParticleSystem::instance().update(dt);
             updateAnimations(dt);
             drawFrame();
             
@@ -1579,6 +1631,9 @@ private:
 
 
 
+        // Render particles
+        renderParticles(cmd);
+
         // Render UI overlay
         renderUI(cmd, m_swapchain.extent().width, m_swapchain.extent().height);
         
@@ -1617,6 +1672,30 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -31,6 +31,15 @@
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\ShadowMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\AudioSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\ParticleSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Projects\Mythbreaker\src\app\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -382,6 +382,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanBuffer.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanDescriptors.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\VulkanTexture.cpp" />
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\vulkan\ShadowMap.cpp" />
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\AudioSystem.cpp" />
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\ParticleSystem.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\app\main.cpp" />
   </ItemGroup>
   <ItemGroup />

@@ -21,6 +21,8 @@ public:
     
     void initSkinned(VulkanContext* ctx, VulkanSwapchain* swapchain, DescriptorManager* descriptors,
                      const std::string& vertPath, const std::string& fragPath);
+    void initParticle(VulkanContext* ctx, VulkanSwapchain* swapchain, DescriptorManager* descriptors,
+                      const std::string& vertPath, const std::string& fragPath);
     
     void destroy();
     
@@ -38,3 +40,4 @@ private:
 
 } // namespace vk
 } // namespace myth
+
