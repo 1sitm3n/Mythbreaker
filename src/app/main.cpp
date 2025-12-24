@@ -21,6 +21,7 @@
 #include "engine/ParticleSystem.h"
 #include "engine/TimeSystem.h"
 #include "engine/WeatherSystem.h"
+#include "engine/PostProcess.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -206,6 +207,7 @@ public:
 private:
     GLFWwindow* m_window = nullptr; VulkanContext m_context; VulkanSwapchain m_swapchain; DescriptorManager m_descriptors;
     VulkanPipeline m_skyPipeline;
+    PostProcess m_postProcess;
     VulkanPipeline m_uiPipeline;
     HUDState m_hud;
     std::vector<UIVertex> m_uiVertices;
@@ -1714,6 +1716,7 @@ private:
         }
         m_terrainIB.destroy(); m_terrainVB.destroy();
         m_staticIB.destroy(); m_staticVB.destroy();
+        m_postProcess.destroy();
         m_litPipeline.destroy(); m_skinnedPipeline.destroy(); m_skyPipeline.destroy();
         m_descriptors.destroy(); m_swapchain.destroy(); m_context.destroy();
         glfwDestroyWindow(m_window); glfwTerminate();
@@ -1725,6 +1728,12 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
 
 
 
