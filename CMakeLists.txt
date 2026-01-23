@@ -44,6 +44,7 @@ set(ENGINE_SOURCES
     src/engine/AudioSystem.cpp
     src/engine/ParticleSystem.cpp
     src/engine/PostProcess.cpp
+    src/engine/BiomeSystem.cpp
 )
 
 set(APP_SOURCES
@@ -62,6 +63,7 @@ target_link_libraries(Mythbreaker
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/shaders/bin/basic.vert.spv")
     message(WARNING "Shaders not compiled! Run scripts/compile_shaders.ps1")
 endif()
+
 
 
 

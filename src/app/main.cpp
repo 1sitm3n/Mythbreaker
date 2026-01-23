@@ -22,6 +22,7 @@
 #include "engine/TimeSystem.h"
 #include "engine/WeatherSystem.h"
 #include "engine/PostProcess.h"
+#include "engine/BiomeSystem.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -35,21 +36,176 @@ using namespace myth::ecs;
 struct ChunkCoord { int x, z; bool operator==(const ChunkCoord& o) const { return x==o.x && z==o.z; } };
 struct ChunkCoordHash { size_t operator()(const ChunkCoord& c) const { return std::hash<int>()(c.x)^(std::hash<int>()(c.z)<<16); } };
 
-// Terrain height function using noise
+// Terrain functions using BiomeSystem
 float terrainHeight(float worldX, float worldZ) {
-    const float scale = 0.02f;
-    const float heightScale = 8.0f;
-    
-    // Base terrain with FBM
-    float h = Noise::fbm(worldX * scale, worldZ * scale, 5, 2.0f, 0.5f);
-    
-    // Add some ridged noise for variation
-    float ridged = Noise::ridged(worldX * scale * 0.5f, worldZ * scale * 0.5f, 3);
-    h = h * 0.7f + ridged * 0.3f;
-    
-    return h * heightScale;
+    return BiomeSystem::instance().getHeight(worldX, worldZ);
 }
 
+glm::vec3 terrainColor(float worldX, float worldZ) {
+    return BiomeSystem::instance().getGroundColor(worldX, worldZ);
+}
+
+bool isWaterAt(float worldX, float worldZ) {
+    return BiomeSystem::instance().isWater(worldX, worldZ);
+}
+
+std::vector<Vertex> createTreeMesh(float height, float trunkRadius, int type) {
+    std::vector<Vertex> verts;
+    glm::vec3 brown(0.4f, 0.25f, 0.1f);
+    glm::vec3 green(0.2f, 0.5f, 0.15f);
+    glm::vec3 darkGreen(0.1f, 0.35f, 0.1f);
+    glm::vec3 snow(0.9f, 0.95f, 1.0f);
+    
+    // Trunk (simple box)
+    float tw = trunkRadius;
+    float th = height * 0.4f;
+    // Front
+    verts.push_back({{-tw, 0, tw}, brown, {0,0}, {0,0,1}});
+    verts.push_back({{tw, 0, tw}, brown, {1,0}, {0,0,1}});
+    verts.push_back({{tw, th, tw}, brown, {1,1}, {0,0,1}});
+    verts.push_back({{-tw, 0, tw}, brown, {0,0}, {0,0,1}});
+    verts.push_back({{tw, th, tw}, brown, {1,1}, {0,0,1}});
+    verts.push_back({{-tw, th, tw}, brown, {0,1}, {0,0,1}});
+    // Back
+    verts.push_back({{tw, 0, -tw}, brown, {0,0}, {0,0,-1}});
+    verts.push_back({{-tw, 0, -tw}, brown, {1,0}, {0,0,-1}});
+    verts.push_back({{-tw, th, -tw}, brown, {1,1}, {0,0,-1}});
+    verts.push_back({{tw, 0, -tw}, brown, {0,0}, {0,0,-1}});
+    verts.push_back({{-tw, th, -tw}, brown, {1,1}, {0,0,-1}});
+    verts.push_back({{tw, th, -tw}, brown, {0,1}, {0,0,-1}});
+    // Left
+    verts.push_back({{-tw, 0, -tw}, brown, {0,0}, {-1,0,0}});
+    verts.push_back({{-tw, 0, tw}, brown, {1,0}, {-1,0,0}});
+    verts.push_back({{-tw, th, tw}, brown, {1,1}, {-1,0,0}});
+    verts.push_back({{-tw, 0, -tw}, brown, {0,0}, {-1,0,0}});
+    verts.push_back({{-tw, th, tw}, brown, {1,1}, {-1,0,0}});
+    verts.push_back({{-tw, th, -tw}, brown, {0,1}, {-1,0,0}});
+    // Right
+    verts.push_back({{tw, 0, tw}, brown, {0,0}, {1,0,0}});
+    verts.push_back({{tw, 0, -tw}, brown, {1,0}, {1,0,0}});
+    verts.push_back({{tw, th, -tw}, brown, {1,1}, {1,0,0}});
+    verts.push_back({{tw, 0, tw}, brown, {0,0}, {1,0,0}});
+    verts.push_back({{tw, th, -tw}, brown, {1,1}, {1,0,0}});
+    verts.push_back({{tw, th, tw}, brown, {0,1}, {1,0,0}});
+    
+    // Foliage (cone or sphere depending on type)
+    glm::vec3 leafColor = (type == 0) ? darkGreen : green; // Pine vs Oak
+    float lh = height * 0.7f;
+    float lw = height * 0.35f;
+    
+    if (type == 0) { // Pine - cone shape
+        // Simple pyramid
+        glm::vec3 top(0, th + lh, 0);
+        int segments = 6;
+        for (int i = 0; i < segments; i++) {
+            float a1 = (float)i / segments * 6.28f;
+            float a2 = (float)(i+1) / segments * 6.28f;
+            glm::vec3 p1(cos(a1)*lw, th, sin(a1)*lw);
+            glm::vec3 p2(cos(a2)*lw, th, sin(a2)*lw);
+            glm::vec3 n = glm::normalize(glm::cross(p2-p1, top-p1));
+            verts.push_back({p1, leafColor, {0,0}, n});
+            verts.push_back({p2, leafColor, {1,0}, n});
+            verts.push_back({top, leafColor, {0.5f,1}, n});
+        }
+    } else { // Oak/other - blocky crown
+        float cy = th + lh * 0.5f;
+        // Simple box crown
+        verts.push_back({{-lw, cy-lh*0.4f, lw}, leafColor, {0,0}, {0,0,1}});
+        verts.push_back({{lw, cy-lh*0.4f, lw}, leafColor, {1,0}, {0,0,1}});
+        verts.push_back({{lw, cy+lh*0.4f, lw}, leafColor, {1,1}, {0,0,1}});
+        verts.push_back({{-lw, cy-lh*0.4f, lw}, leafColor, {0,0}, {0,0,1}});
+        verts.push_back({{lw, cy+lh*0.4f, lw}, leafColor, {1,1}, {0,0,1}});
+        verts.push_back({{-lw, cy+lh*0.4f, lw}, leafColor, {0,1}, {0,0,1}});
+        
+        verts.push_back({{lw, cy-lh*0.4f, -lw}, leafColor, {0,0}, {0,0,-1}});
+        verts.push_back({{-lw, cy-lh*0.4f, -lw}, leafColor, {1,0}, {0,0,-1}});
+        verts.push_back({{-lw, cy+lh*0.4f, -lw}, leafColor, {1,1}, {0,0,-1}});
+        verts.push_back({{lw, cy-lh*0.4f, -lw}, leafColor, {0,0}, {0,0,-1}});
+        verts.push_back({{-lw, cy+lh*0.4f, -lw}, leafColor, {1,1}, {0,0,-1}});
+        verts.push_back({{lw, cy+lh*0.4f, -lw}, leafColor, {0,1}, {0,0,-1}});
+        
+        verts.push_back({{-lw, cy-lh*0.4f, -lw}, leafColor, {0,0}, {-1,0,0}});
+        verts.push_back({{-lw, cy-lh*0.4f, lw}, leafColor, {1,0}, {-1,0,0}});
+        verts.push_back({{-lw, cy+lh*0.4f, lw}, leafColor, {1,1}, {-1,0,0}});
+        verts.push_back({{-lw, cy-lh*0.4f, -lw}, leafColor, {0,0}, {-1,0,0}});
+        verts.push_back({{-lw, cy+lh*0.4f, lw}, leafColor, {1,1}, {-1,0,0}});
+        verts.push_back({{-lw, cy+lh*0.4f, -lw}, leafColor, {0,1}, {-1,0,0}});
+        
+        verts.push_back({{lw, cy-lh*0.4f, lw}, leafColor, {0,0}, {1,0,0}});
+        verts.push_back({{lw, cy-lh*0.4f, -lw}, leafColor, {1,0}, {1,0,0}});
+        verts.push_back({{lw, cy+lh*0.4f, -lw}, leafColor, {1,1}, {1,0,0}});
+        verts.push_back({{lw, cy-lh*0.4f, lw}, leafColor, {0,0}, {1,0,0}});
+        verts.push_back({{lw, cy+lh*0.4f, -lw}, leafColor, {1,1}, {1,0,0}});
+        verts.push_back({{lw, cy+lh*0.4f, lw}, leafColor, {0,1}, {1,0,0}});
+        
+        verts.push_back({{-lw, cy+lh*0.4f, lw}, leafColor, {0,0}, {0,1,0}});
+        verts.push_back({{lw, cy+lh*0.4f, lw}, leafColor, {1,0}, {0,1,0}});
+        verts.push_back({{lw, cy+lh*0.4f, -lw}, leafColor, {1,1}, {0,1,0}});
+        verts.push_back({{-lw, cy+lh*0.4f, lw}, leafColor, {0,0}, {0,1,0}});
+        verts.push_back({{lw, cy+lh*0.4f, -lw}, leafColor, {1,1}, {0,1,0}});
+        verts.push_back({{-lw, cy+lh*0.4f, -lw}, leafColor, {0,1}, {0,1,0}});
+    }
+    return verts;
+}
+
+std::vector<Vertex> createRockMesh(float size) {
+    std::vector<Vertex> verts;
+    glm::vec3 gray(0.5f, 0.48f, 0.45f);
+    // Irregular box
+    float s = size * 0.5f;
+    float h = size * 0.6f;
+    // Top (slightly smaller)
+    float ts = s * 0.7f;
+    // Front
+    verts.push_back({{-s, 0, s}, gray, {0,0}, {0,0,1}});
+    verts.push_back({{s, 0, s}, gray, {1,0}, {0,0,1}});
+    verts.push_back({{ts, h, ts}, gray, {1,1}, {0,0.3f,1}});
+    verts.push_back({{-s, 0, s}, gray, {0,0}, {0,0,1}});
+    verts.push_back({{ts, h, ts}, gray, {1,1}, {0,0.3f,1}});
+    verts.push_back({{-ts, h, ts}, gray, {0,1}, {0,0.3f,1}});
+    // Back
+    verts.push_back({{s, 0, -s}, gray, {0,0}, {0,0,-1}});
+    verts.push_back({{-s, 0, -s}, gray, {1,0}, {0,0,-1}});
+    verts.push_back({{-ts, h, -ts}, gray, {1,1}, {0,0.3f,-1}});
+    verts.push_back({{s, 0, -s}, gray, {0,0}, {0,0,-1}});
+    verts.push_back({{-ts, h, -ts}, gray, {1,1}, {0,0.3f,-1}});
+    verts.push_back({{ts, h, -ts}, gray, {0,1}, {0,0.3f,-1}});
+    // Left
+    verts.push_back({{-s, 0, -s}, gray, {0,0}, {-1,0,0}});
+    verts.push_back({{-s, 0, s}, gray, {1,0}, {-1,0,0}});
+    verts.push_back({{-ts, h, ts}, gray, {1,1}, {-1,0.3f,0}});
+    verts.push_back({{-s, 0, -s}, gray, {0,0}, {-1,0,0}});
+    verts.push_back({{-ts, h, ts}, gray, {1,1}, {-1,0.3f,0}});
+    verts.push_back({{-ts, h, -ts}, gray, {0,1}, {-1,0.3f,0}});
+    // Right
+    verts.push_back({{s, 0, s}, gray, {0,0}, {1,0,0}});
+    verts.push_back({{s, 0, -s}, gray, {1,0}, {1,0,0}});
+    verts.push_back({{ts, h, -ts}, gray, {1,1}, {1,0.3f,0}});
+    verts.push_back({{s, 0, s}, gray, {0,0}, {1,0,0}});
+    verts.push_back({{ts, h, -ts}, gray, {1,1}, {1,0.3f,0}});
+    verts.push_back({{ts, h, ts}, gray, {0,1}, {1,0.3f,0}});
+    // Top
+    verts.push_back({{-ts, h, ts}, gray, {0,0}, {0,1,0}});
+    verts.push_back({{ts, h, ts}, gray, {1,0}, {0,1,0}});
+    verts.push_back({{ts, h, -ts}, gray, {1,1}, {0,1,0}});
+    verts.push_back({{-ts, h, ts}, gray, {0,0}, {0,1,0}});
+    verts.push_back({{ts, h, -ts}, gray, {1,1}, {0,1,0}});
+    verts.push_back({{-ts, h, -ts}, gray, {0,1}, {0,1,0}});
+    return verts;
+}
+
+std::vector<Vertex> createWaterQuad(float size) {
+    std::vector<Vertex> verts;
+    glm::vec3 water(0.2f, 0.4f, 0.7f);
+    float s = size;
+    verts.push_back({{-s, 0, s}, water, {0,0}, {0,1,0}});
+    verts.push_back({{s, 0, s}, water, {1,0}, {0,1,0}});
+    verts.push_back({{s, 0, -s}, water, {1,1}, {0,1,0}});
+    verts.push_back({{-s, 0, s}, water, {0,0}, {0,1,0}});
+    verts.push_back({{s, 0, -s}, water, {1,1}, {0,1,0}});
+    verts.push_back({{-s, 0, -s}, water, {0,1}, {0,1,0}});
+    return verts;
+}
 struct Chunk {
     ChunkCoord coord;
     std::vector<Vertex> vertices;
@@ -74,7 +230,7 @@ struct Chunk {
                 
                 Vertex v;
                 v.position = glm::vec3(wx, h, wz);
-                v.color = glm::vec3(1.0f);
+                v.color = terrainColor(wx, wz);
                 v.texCoord = glm::vec2(x * uvStep * 4.0f, z * uvStep * 4.0f); // Tile texture
                 v.normal = glm::vec3(0, 1, 0); // Will calculate properly
                 vertices.push_back(v);
@@ -219,6 +375,11 @@ private:
     ShadowMap m_shadowMap;
     VulkanBuffer m_terrainVB, m_terrainIB; uint32_t m_terrainIndexCount = 0;
     VulkanBuffer m_staticVB, m_staticIB; std::vector<MeshInfo> m_meshes;
+    VulkanBuffer m_treeVB, m_treeIB; uint32_t m_treeIndexCount = 0;
+    VulkanBuffer m_rockVB, m_rockIB; uint32_t m_rockIndexCount = 0;
+    VulkanBuffer m_waterVB, m_waterIB; uint32_t m_waterIndexCount = 0;
+    std::vector<glm::mat4> m_treeTransforms;
+    std::vector<glm::mat4> m_rockTransforms;
     VulkanTexture m_groundTexture, m_stoneTexture, m_playerTexture, m_enemyTexture;
     VulkanTexture m_npcTexture;
     uint32_t m_groundMaterial = 0, m_stoneMaterial = 0, m_playerMaterial = 0, m_enemyMaterial = 0;
@@ -303,8 +464,11 @@ private:
         createMeshes();
         createEntities();
         createSyncObjects();
+        BiomeSystem::instance().init(12345);
+        Logger::info("Biome system initialized");
         m_chunks.update(glm::vec3(0));
         rebuildTerrain();
+        rebuildVegetation(glm::vec3(0));
         spawnPickups();
         spawnEnemies();
         spawnNPCs();
@@ -512,6 +676,125 @@ private:
         }
     }
 
+    
+    void rebuildVegetation(const glm::vec3& playerPos) {
+        std::vector<Vertex> treeVerts, rockVerts, waterVerts;
+        m_treeTransforms.clear();
+        m_rockTransforms.clear();
+
+        // Generate natural lakes from BiomeSystem water bodies
+        glm::vec3 waterColor(0.15f, 0.4f, 0.6f);
+        // DEBUG: Put water right at player with bright color
+        float lakeX = 0.0f, lakeZ = -15.0f;
+        float terrainH = terrainHeight(lakeX, lakeZ);
+        // Get the depressed terrain height at lake center
+        float depressedH = terrainHeight(lakeX, lakeZ);
+        float waterLevel = depressedH + 0.1f; // Just above depressed terrain
+        Logger::infof("Lake at ({},{}) depressed terrain={:.1f}", lakeX, lakeZ, depressedH);
+        Logger::infof("Water at ({},{}) terrain={:.1f} water={:.1f}", lakeX, lakeZ, terrainH, waterLevel);
+
+        // Add a lake near spawn
+        float spawnLakeX = lakeX, spawnLakeZ = lakeZ, spawnLakeR = 15.0f;
+        int segments = 24;
+        for (int s = 0; s < segments; s++) {
+            float a1 = (float)s / segments * 6.283f;
+            float a2 = (float)(s+1) / segments * 6.283f;
+            glm::vec3 p0(spawnLakeX, waterLevel, spawnLakeZ);
+            glm::vec3 p1(spawnLakeX + cos(a1)*spawnLakeR, waterLevel, spawnLakeZ + sin(a1)*spawnLakeR);
+            glm::vec3 p2(spawnLakeX + cos(a2)*spawnLakeR, waterLevel, spawnLakeZ + sin(a2)*spawnLakeR);
+            waterVerts.push_back({p0, waterColor, {0.5f,0.5f}, {0,1,0}});
+            waterVerts.push_back({p1, waterColor, {0.5f+cos(a1)*0.5f, 0.5f+sin(a1)*0.5f}, {0,1,0}});
+            waterVerts.push_back({p2, waterColor, {0.5f+cos(a2)*0.5f, 0.5f+sin(a2)*0.5f}, {0,1,0}});
+        }
+        for (const auto& lake : BiomeSystem::instance().getWaterBodies()) {
+            float dist = glm::length(glm::vec2(playerPos.x - lake.center.x, playerPos.z - lake.center.z));
+            if (dist < 200.0f) {
+                float lx = lake.center.x;
+                float lz = lake.center.z;
+                float lr = lake.radius;
+                int segments = 16;
+                for (int s = 0; s < segments; s++) {
+                    float a1 = (float)s / segments * 6.283f;
+                    float a2 = (float)(s+1) / segments * 6.283f;
+                    glm::vec3 p0(lx, waterLevel, lz);
+                    glm::vec3 p1(lx + cos(a1)*lr, waterLevel, lz + sin(a1)*lr);
+                    glm::vec3 p2(lx + cos(a2)*lr, waterLevel, lz + sin(a2)*lr);
+                    waterVerts.push_back({p0, waterColor, {0.5f,0.5f}, {0,1,0}});
+                    waterVerts.push_back({p1, waterColor, {0.5f+cos(a1)*0.5f, 0.5f+sin(a1)*0.5f}, {0,1,0}});
+                    waterVerts.push_back({p2, waterColor, {0.5f+cos(a2)*0.5f, 0.5f+sin(a2)*0.5f}, {0,1,0}});
+                }
+            }
+        }
+        
+        auto& biome = BiomeSystem::instance();
+        int playerChunkX = static_cast<int>(floor(playerPos.x / 32.0f));
+        int playerChunkZ = static_cast<int>(floor(playerPos.z / 32.0f));
+        
+        // Generate vegetation for nearby chunks
+        for (int cz = playerChunkZ - 3; cz <= playerChunkZ + 3; cz++) {
+            for (int cx = playerChunkX - 3; cx <= playerChunkX + 3; cx++) {
+                auto trees = biome.getTreesInChunk(cx, cz);
+                for (const auto& tree : trees) {
+                    auto mesh = createTreeMesh(8.0f * tree.scale, 0.5f * tree.scale, tree.type);
+                    uint32_t base = static_cast<uint32_t>(treeVerts.size());
+                    for (auto& v : mesh) {
+                        v.position = v.position + tree.position;
+                        treeVerts.push_back(v);
+                    }
+                }
+                
+                auto rocks = biome.getRocksInChunk(cx, cz);
+                for (const auto& rock : rocks) {
+                    auto mesh = createRockMesh(2.5f * rock.scale);
+                    for (auto& v : mesh) {
+                        v.position = v.position + rock.position;
+                        rockVerts.push_back(v);
+                    }
+                }
+            }
+        }
+        
+        // Create water surfaces for lakes
+        for (const auto& water : biome.getWaterBodies()) {
+            float dist = glm::length(glm::vec2(playerPos.x, playerPos.z) - glm::vec2(water.center.x, water.center.z));
+            if (dist < water.radius + 100.0f) {
+                auto mesh = createWaterQuad(water.radius);
+                for (auto& v : mesh) {
+                    v.position.x += water.center.x;
+                    v.position.y = water.center.y;
+                    v.position.z += water.center.z;
+                    waterVerts.push_back(v);
+                }
+            }
+        }
+        
+        // Upload tree buffer
+        m_treeVB.destroy(); m_treeIB.destroy();
+        m_treeIndexCount = static_cast<uint32_t>(treeVerts.size());
+        if (m_treeIndexCount > 0) {
+            VulkanBuffer::createWithStaging(&m_context, m_treeVB, treeVerts.data(), 
+                sizeof(Vertex) * treeVerts.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        }
+        
+        // Upload rock buffer
+        m_rockVB.destroy(); m_rockIB.destroy();
+        m_rockIndexCount = static_cast<uint32_t>(rockVerts.size());
+        if (m_rockIndexCount > 0) {
+            VulkanBuffer::createWithStaging(&m_context, m_rockVB, rockVerts.data(),
+                sizeof(Vertex) * rockVerts.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        }
+        
+        // Upload water buffer
+        m_waterVB.destroy(); m_waterIB.destroy();
+        m_waterIndexCount = static_cast<uint32_t>(waterVerts.size());
+        if (m_waterIndexCount > 0) {
+            VulkanBuffer::createWithStaging(&m_context, m_waterVB, waterVerts.data(),
+                sizeof(Vertex) * waterVerts.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        }
+        
+        Logger::infof("Vegetation: {} tree verts, {} rock verts, {} water verts", 
+            m_treeIndexCount, m_rockIndexCount, m_waterIndexCount);
+    }
     void rebuildTerrain() {
         std::vector<Vertex> v; std::vector<uint32_t> i;
         m_chunks.buildMesh(v, i);
@@ -1567,6 +1850,33 @@ private:
             vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
             vkCmdDrawIndexed(cmd, m_terrainIndexCount, 1, 0, 0, 0);
         }
+
+        // Trees
+        if (m_treeIndexCount > 0 && m_treeVB.buffer() != VK_NULL_HANDLE) {
+            m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_groundMaterial);
+            VkBuffer tvb[] = {m_treeVB.buffer()}; VkDeviceSize tvo[] = {0};
+            vkCmdBindVertexBuffers(cmd, 0, 1, tvb, tvo);
+            push.model = glm::mat4(1.0f);
+            vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+            vkCmdDraw(cmd, m_treeIndexCount, 1, 0, 0);
+        }
+        // Rocks
+        if (m_rockIndexCount > 0 && m_rockVB.buffer() != VK_NULL_HANDLE) {
+            m_descriptors.bindMaterial(cmd, m_litPipeline.pipelineLayout(), m_currentFrame, m_stoneMaterial);
+            VkBuffer rvb[] = {m_rockVB.buffer()}; VkDeviceSize rvo[] = {0};
+            vkCmdBindVertexBuffers(cmd, 0, 1, rvb, rvo);
+            push.model = glm::mat4(1.0f);
+            vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+            vkCmdDraw(cmd, m_rockIndexCount, 1, 0, 0);
+        }
+        // Water
+        if (m_waterIndexCount > 0 && m_waterVB.buffer() != VK_NULL_HANDLE) {
+            VkBuffer wvb[] = {m_waterVB.buffer()}; VkDeviceSize wvo[] = {0};
+            vkCmdBindVertexBuffers(cmd, 0, 1, wvb, wvo);
+            push.model = glm::mat4(1.0f);
+            vkCmdPushConstants(cmd, m_litPipeline.pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+            vkCmdDraw(cmd, m_waterIndexCount, 1, 0, 0);
+        }
         
         // Static meshes
         VkBuffer sb[] = {m_staticVB.buffer()}; VkDeviceSize so[] = {0};
@@ -1715,6 +2025,9 @@ private:
             vkDestroyFence(m_context.device(), m_inFlight[i], nullptr);
         }
         m_terrainIB.destroy(); m_terrainVB.destroy();
+        m_treeVB.destroy(); m_treeIB.destroy();
+        m_rockVB.destroy(); m_rockIB.destroy();
+        m_waterVB.destroy(); m_waterIB.destroy();
         m_staticIB.destroy(); m_staticVB.destroy();
         m_postProcess.destroy();
         m_litPipeline.destroy(); m_skinnedPipeline.destroy(); m_skyPipeline.destroy();
@@ -1728,6 +2041,44 @@ int main() {
     catch (const std::exception& e) { Logger::fatal(e.what()); return 1; }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

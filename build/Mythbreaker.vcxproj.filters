@@ -43,6 +43,9 @@
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\PostProcess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\BiomeSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Projects\Mythbreaker\src\app\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

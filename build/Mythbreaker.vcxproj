@@ -386,6 +386,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\AudioSystem.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\ParticleSystem.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\engine\PostProcess.cpp" />
+    <ClCompile Include="C:\Projects\Mythbreaker\src\engine\BiomeSystem.cpp" />
     <ClCompile Include="C:\Projects\Mythbreaker\src\app\main.cpp" />
   </ItemGroup>
   <ItemGroup />
