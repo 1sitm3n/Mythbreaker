@@ -1,4 +1,4 @@
-#include <random>
+﻿#include <random>
 #include "engine/Logger.h"
 #include "engine/Timer.h"
 #include "engine/Input.h"
@@ -23,8 +23,6 @@
 #include "engine/WeatherSystem.h"
 #include "engine/PostProcess.h"
 #include "engine/BiomeSystem.h"
-#include "engine/FrustumCuller.h"
-#include "engine/GameState.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -399,8 +397,6 @@ private:
     bool m_mouseCaptured = true; float m_scrollDelta = 0.0f;
     Timer m_timer; float m_logTimer = 0.0f, m_totalPlayTime = 0.0f;
     RegionVisuals m_currentVisuals; RegionState m_lastLoggedState = RegionState::Stable;
-    FrustumCuller m_frustumCuller;
-    GameStateMachine m_gameState;
     
     glm::vec3 m_sunDirection = glm::normalize(glm::vec3(0.5f, -0.8f, 0.3f));
     float m_sunIntensity = 1.2f;
@@ -411,7 +407,7 @@ private:
 
     void initWindow() {
         glfwInit(); glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(1280, 720, "Mythbreaker", nullptr, nullptr);
+        m_window = glfwCreateWindow(1280, 720, "Mythbreaker - NPC & Dialogue", nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, int, int) {
             reinterpret_cast<Application*>(glfwGetWindowUserPointer(w))->m_framebufferResized = true;
@@ -1670,8 +1666,8 @@ private:
                     int dispH = static_cast<int>(gameHour);
                     int dispM = static_cast<int>((gameHour - dispH) * 60);
                     const char* timePeriod = (dispH < 6 || dispH >= 19) ? "Night" : (dispH < 12) ? "Morning" : (dispH < 17) ? "Day" : "Evening";
-                    Logger::infof("FPS: {:.0f} | {:02d}:{:02d} {} | Pos: ({:.0f},{:.1f},{:.0f}) | Cull: {}/{} ({:.0f}%%)",
-                        m_timer.fps(), dispH, dispM, timePeriod, pt.position.x, pt.position.y, pt.position.z, m_frustumCuller.totalVisible(), m_frustumCuller.totalTested(), m_frustumCuller.cullPercentage());
+                    Logger::infof("FPS: {:.0f} | {:02d}:{:02d} {} | Pos: ({:.0f},{:.1f},{:.0f})",
+                        m_timer.fps(), dispH, dispM, timePeriod, pt.position.x, pt.position.y, pt.position.z);
                 }
                 m_logTimer = 0.0f;
             }
@@ -1681,22 +1677,7 @@ private:
 
     void processInput(float dt) {
         auto& input = Input::instance();
-        if (input.isKeyPressed(GLFW_KEY_ESCAPE)) {
-            if (m_gameState.current() == GameState::Playing) {
-                m_gameState.transitionTo(GameState::Paused);
-                m_mouseCaptured = false;
-                glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                Logger::info("*** PAUSED - Press ESC to resume ***");
-            } else if (m_gameState.current() == GameState::Paused) {
-                m_gameState.transitionTo(GameState::Playing);
-                m_mouseCaptured = true;
-                glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                Logger::info("*** RESUMED ***");
-            } else {
-                glfwSetWindowShouldClose(m_window, true);
-            }
-            return;
-        }
+        if (input.isKeyPressed(GLFW_KEY_ESCAPE)) { glfwSetWindowShouldClose(m_window, true); return; }
         if (input.isKeyPressed(GLFW_KEY_TAB)) {
             m_mouseCaptured = !m_mouseCaptured;
             glfwSetInputMode(m_window, GLFW_CURSOR, m_mouseCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
