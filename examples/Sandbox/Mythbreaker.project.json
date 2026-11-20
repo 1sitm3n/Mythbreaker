@@ -1,0 +1,7 @@
+{
+  "assetDirectory": "Assets",
+  "format": "mythbreaker.project",
+  "name": "Mythbreaker Sandbox",
+  "startScene": "Scenes/Main.scene.json",
+  "version": 1
+}

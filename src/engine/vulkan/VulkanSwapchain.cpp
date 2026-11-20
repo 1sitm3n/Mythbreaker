@@ -1,4 +1,4 @@
-﻿#include "VulkanSwapchain.h"
+#include "VulkanSwapchain.h"
 #include "engine/Logger.h"
 #include <GLFW/glfw3.h>
 #include <algorithm>
@@ -37,6 +37,7 @@ void VulkanSwapchain::recreate() {
 }
 
 void VulkanSwapchain::cleanup() {
+    if (!m_context || !m_context->device()) return;
     auto device = m_context->device();
     for (auto fb : m_framebuffers) vkDestroyFramebuffer(device, fb, nullptr);
     m_framebuffers.clear();
@@ -85,6 +86,7 @@ void VulkanSwapchain::createSwapchain() {
     std::vector<VkPresentModeKHR> modes(modeCount);
     vkGetPhysicalDeviceSurfacePresentModesKHR(physDevice, surface, &modeCount, modes.data());
     
+    if (formats.empty() || modes.empty()) throw std::runtime_error("Surface has no usable swapchain formats or present modes");
     auto surfaceFormat = chooseSurfaceFormat(formats);
     auto presentMode = choosePresentMode(modes);
     m_extent = chooseExtent(caps);
@@ -114,6 +116,11 @@ void VulkanSwapchain::createSwapchain() {
     }
     createInfo.preTransform = caps.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    if (!(caps.supportedCompositeAlpha & createInfo.compositeAlpha)) {
+        for (VkCompositeAlphaFlagBitsKHR alpha : {VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR}) {
+            if (caps.supportedCompositeAlpha & alpha) { createInfo.compositeAlpha = alpha; break; }
+        }
+    }
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
     

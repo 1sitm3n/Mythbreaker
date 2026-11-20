@@ -1,0 +1,83 @@
+name: Engine builds
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engine-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install graphics build and software rendering dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libvulkan-dev glslang-tools libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev mesa-vulkan-drivers vulkan-validationlayers xvfb
+      - name: Configure
+        run: cmake --preset desktop
+      - name: Build
+        run: cmake --build --preset desktop --parallel 2
+      - name: Test engine, editor workflow, and importers
+        run: ctest --preset desktop
+      - name: Run editor and standalone player under Vulkan validation
+        env:
+          MYTHBREAKER_VALIDATION: '1'
+        run: |
+          export VK_ICD_FILENAMES="$(find /usr/share/vulkan/icd.d -name '*lvp*.json' -print -quit)"
+          xvfb-run -a out/desktop/bin/MythbreakerEditor --frames 20 --audio-null --screenshot editor.ppm 2>&1 | tee editor.log
+          xvfb-run -a out/desktop/bin/MythbreakerRuntime --frames 20 --audio-null --screenshot runtime.ppm 2>&1 | tee runtime.log
+          ! grep -E 'Validation Error|VUID-' editor.log runtime.log
+      - name: Install distributable engine
+        run: cmake --install out/desktop --prefix dist/Mythbreaker-linux
+      - name: Package and launch the saved starter game
+        run: |
+          dist/Mythbreaker-linux/MythbreakerCLI package dist/Mythbreaker-linux/projects/Sandbox dist/Example-game
+          cd /tmp
+          xvfb-run -a "$GITHUB_WORKSPACE/dist/Example-game/Launch.sh" --frames 20 --audio-null
+      - name: Preserve executable permissions in the Linux download
+        run: tar -czf Mythbreaker-linux-x64.tar.gz -C dist Mythbreaker-linux
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Mythbreaker-linux
+          path: Mythbreaker-linux-x64.tar.gz
+
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: humbletim/install-vulkan-sdk@30ba978f977e81b72d091fc8888feb1fb26f9aff # v1.2
+        with:
+          version: 1.4.309.0
+          cache: true
+      - name: Configure MSVC
+        run: cmake -S . -B out/windows -A x64
+      - name: Build editor and standalone player
+        run: cmake --build out/windows --config Release --parallel 2
+      - name: Test engine, editor workflow, and importers
+        run: ctest --test-dir out/windows -C Release --output-on-failure
+      - name: Install distributable engine
+        run: cmake --install out/windows --config Release --prefix dist/Mythbreaker-windows
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Mythbreaker-windows
+          path: dist/Mythbreaker-windows
+
+  headless:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - run: cmake --preset headless
+      - run: cmake --build --preset headless --parallel 2
+      - run: ctest --preset headless
+      - name: Exercise project workflow without a GPU
+        run: |
+          out/headless/bin/MythbreakerCLI create /tmp/Mythbreaker-game 'CI game'
+          out/headless/bin/MythbreakerCLI validate /tmp/Mythbreaker-game
+          out/headless/bin/MythbreakerCLI simulate /tmp/Mythbreaker-game 600

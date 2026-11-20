@@ -1,4 +1,4 @@
-﻿# Build outputs
+# Build outputs
 build/
 out/
 cmake-build-*/
@@ -26,8 +26,14 @@ shaders/bin/
 *.pdb
 *.ilk
 *.exp
-*.obj
 
 # OS files
 Thumbs.db
 .DS_Store
+
+# Local editor state and temporary transactional saves
+imgui.ini
+*.tmp
+*.log
+CMakeUserPresets.json
+*.staging-*
