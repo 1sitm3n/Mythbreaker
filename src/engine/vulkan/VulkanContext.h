@@ -1,8 +1,10 @@
 ﻿#pragma once
 
-#define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
+#ifndef GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_NONE
+#endif
 #include <GLFW/glfw3.h>
 #include "VulkanTypes.h"
 #include <vector>
@@ -49,6 +51,8 @@ private:
     QueueFamilyIndices m_queueFamilies;
     VkCommandPool m_commandPool = VK_NULL_HANDLE;
     VmaAllocator m_allocator = VK_NULL_HANDLE;
+    bool m_validationEnabled = false;
+    bool m_debugUtilsEnabled = false;
 };
 
 } // namespace vk

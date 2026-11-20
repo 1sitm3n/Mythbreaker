@@ -1,72 +1,159 @@
-﻿cmake_minimum_required(VERSION 3.20)
-project(Mythbreaker VERSION 0.1.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.20)
+project(Mythbreaker VERSION 0.2.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_CXX_EXTENSIONS OFF)
+# Keep packaged MSVC applications independent of a separate VC++ redistributable.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+option(MYTHBREAKER_BUILD_DESKTOP "Build the Vulkan editor and standalone player" ON)
+option(MYTHBREAKER_BUILD_TESTS "Build deterministic engine tests" ON)
+option(MYTHBREAKER_BUILD_LEGACY_DEMO "Build the preserved RPG prototype" OFF)
 
-# Vulkan
-find_package(Vulkan REQUIRED)
-
-# GLFW
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(third_party/glfw)
-
-# Include directories
-include_directories(
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/third_party/glm
-    ${CMAKE_SOURCE_DIR}/third_party/vma
-    ${CMAKE_SOURCE_DIR}/third_party/stb
-    ${CMAKE_SOURCE_DIR}/third_party/tinygltf
-    ${CMAKE_SOURCE_DIR}/third_party/nlohmann
-    ${CMAKE_SOURCE_DIR}/third_party/tinyobjloader
-    ${Vulkan_INCLUDE_DIRS}
-)
-
-# Source files
-set(ENGINE_SOURCES
-    src/engine/Logger.cpp
-    src/engine/Timer.cpp
-    src/engine/Input.cpp
-    src/engine/vulkan/VulkanContext.cpp
-    src/engine/vulkan/VulkanSwapchain.cpp
-    src/engine/vulkan/VulkanPipeline.cpp
-    src/engine/Model.cpp
-    src/engine/vulkan/VulkanBuffer.cpp
-    src/engine/vulkan/VulkanDescriptors.cpp
-    src/engine/vulkan/VulkanTexture.cpp
-    src/engine/vulkan/ShadowMap.cpp
-    src/engine/AudioSystem.cpp
-    src/engine/ParticleSystem.cpp
-    src/engine/PostProcess.cpp
-    src/engine/BiomeSystem.cpp
-)
-
-set(APP_SOURCES
-    src/app/main.cpp
-)
-
-# Executable
-add_executable(Mythbreaker ${ENGINE_SOURCES} ${APP_SOURCES})
-
-target_link_libraries(Mythbreaker
-    Vulkan::Vulkan
-    glfw
-)
-
-# Copy shaders check
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/shaders/bin/basic.vert.spv")
-    message(WARNING "Shaders not compiled! Run scripts/compile_shaders.ps1")
+find_package(Threads REQUIRED)
+add_library(MythbreakerCore STATIC src/engine/runtime/Scene.cpp src/engine/runtime/Project.cpp src/engine/runtime/Runtime.cpp)
+add_library(Mythbreaker::Core ALIAS MythbreakerCore)
+target_include_directories(MythbreakerCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(MythbreakerCore SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party" "${CMAKE_CURRENT_SOURCE_DIR}/third_party/glm/glm")
+target_compile_definitions(MythbreakerCore PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_ENABLE_EXPERIMENTAL NOMINMAX)
+target_link_libraries(MythbreakerCore PUBLIC Threads::Threads)
+if(MSVC)
+    target_compile_options(MythbreakerCore PRIVATE /W4 /permissive- /utf-8)
+else()
+    target_compile_options(MythbreakerCore PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+add_library(MythbreakerPlatform STATIC src/platform/Paths.cpp src/platform/Package.cpp)
+target_link_libraries(MythbreakerPlatform PUBLIC MythbreakerCore)
+target_compile_definitions(MythbreakerPlatform PRIVATE MYTHBREAKER_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+set(MYTHBREAKER_GAME_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/examples/native/ExampleBehaviours.cpp" CACHE FILEPATH "C++ source implementing registerGameBehaviours for your game")
+if(NOT EXISTS "${MYTHBREAKER_GAME_SOURCE}")
+    message(FATAL_ERROR "MYTHBREAKER_GAME_SOURCE does not exist: ${MYTHBREAKER_GAME_SOURCE}")
+endif()
+add_library(MythbreakerGameModule STATIC "${MYTHBREAKER_GAME_SOURCE}")
+target_link_libraries(MythbreakerGameModule PUBLIC MythbreakerCore)
+add_executable(MythbreakerCLI src/tools/ProjectCLI.cpp)
+target_link_libraries(MythbreakerCLI PRIVATE MythbreakerPlatform MythbreakerGameModule)
+if(MYTHBREAKER_BUILD_TESTS)
+    enable_testing()
+    add_executable(MythbreakerTests tests/core_tests.cpp)
+    target_link_libraries(MythbreakerTests PRIVATE MythbreakerCore)
+    add_test(NAME engine_core COMMAND MythbreakerTests)
 endif()
 
+if(MYTHBREAKER_BUILD_DESKTOP OR MYTHBREAKER_BUILD_LEGACY_DEMO)
+    find_package(Vulkan REQUIRED)
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+    if(UNIX AND NOT APPLE)
+        option(GLFW_BUILD_WAYLAND "Enable optional GLFW Wayland backend" OFF)
+    endif()
+    add_subdirectory(third_party/glfw EXCLUDE_FROM_ALL)
+    find_program(MYTHBREAKER_GLSLC NAMES glslc HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")
+    find_program(MYTHBREAKER_GLSLANG NAMES glslangValidator HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")
+    if(NOT MYTHBREAKER_GLSLC AND NOT MYTHBREAKER_GLSLANG)
+        message(FATAL_ERROR "Install glslc or glslangValidator from the Vulkan SDK, or set MYTHBREAKER_BUILD_DESKTOP=OFF for headless tools/tests.")
+    endif()
+    file(GLOB ENGINE_SHADER_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/shaders/engine_*.vert" "${CMAKE_CURRENT_SOURCE_DIR}/shaders/engine_*.frag")
+    if(MYTHBREAKER_BUILD_LEGACY_DEMO)
+        file(GLOB ENGINE_SHADER_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert" "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag")
+    endif()
+    foreach(SHADER IN LISTS ENGINE_SHADER_SOURCES)
+        get_filename_component(SHADER_NAME "${SHADER}" NAME)
+        set(SPIRV "${CMAKE_CURRENT_BINARY_DIR}/compiled_shaders/${SHADER_NAME}.spv")
+        if(MYTHBREAKER_GLSLC)
+            set(SHADER_COMMAND "${MYTHBREAKER_GLSLC}" --target-env=vulkan1.2 "${SHADER}" -o "${SPIRV}")
+        else()
+            set(SHADER_COMMAND "${MYTHBREAKER_GLSLANG}" -V --target-env vulkan1.2 "${SHADER}" -o "${SPIRV}")
+        endif()
+        add_custom_command(OUTPUT "${SPIRV}" COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/compiled_shaders" COMMAND ${SHADER_COMMAND} DEPENDS "${SHADER}" VERBATIM)
+        list(APPEND ENGINE_SPIRV "${SPIRV}")
+    endforeach()
+    add_custom_target(MythbreakerShaders DEPENDS ${ENGINE_SPIRV})
+endif()
 
+if(MYTHBREAKER_BUILD_DESKTOP)
+    add_library(MythbreakerImGui STATIC third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp third_party/imgui/backends/imgui_impl_glfw.cpp third_party/imgui/backends/imgui_impl_vulkan.cpp)
+    target_include_directories(MythbreakerImGui SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/imgui" "${CMAKE_CURRENT_SOURCE_DIR}/third_party/imgui/backends")
+    target_link_libraries(MythbreakerImGui PUBLIC glfw Vulkan::Vulkan)
+    target_compile_definitions(MythbreakerImGui PUBLIC GLFW_INCLUDE_NONE)
+    add_library(MythbreakerGraphics STATIC src/engine/rendering/SceneRenderer.cpp src/engine/rendering/MeshAsset.cpp src/engine/vulkan/VulkanContext.cpp src/engine/vulkan/VulkanSwapchain.cpp src/engine/Logger.cpp)
+    add_library(Mythbreaker::Graphics ALIAS MythbreakerGraphics)
+    target_include_directories(MythbreakerGraphics SYSTEM PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/vma" "${CMAKE_CURRENT_SOURCE_DIR}/third_party/stb" "${CMAKE_CURRENT_SOURCE_DIR}/third_party/tinygltf" "${CMAKE_CURRENT_SOURCE_DIR}/third_party/tinyobjloader")
+    target_link_libraries(MythbreakerGraphics PUBLIC MythbreakerCore MythbreakerImGui)
+    add_library(MythbreakerAudio STATIC src/engine/audio/AudioMixer.cpp)
+    add_library(Mythbreaker::Audio ALIAS MythbreakerAudio)
+    target_link_libraries(MythbreakerAudio PUBLIC MythbreakerCore PRIVATE ${CMAKE_DL_LIBS})
+    add_executable(MythbreakerEditor src/editor/main.cpp src/editor/Editor.cpp)
+    target_link_libraries(MythbreakerEditor PRIVATE MythbreakerGraphics MythbreakerAudio MythbreakerPlatform MythbreakerGameModule)
+    add_executable(MythbreakerRuntime src/runtime/main.cpp)
+    target_link_libraries(MythbreakerRuntime PRIVATE MythbreakerGraphics MythbreakerAudio MythbreakerPlatform MythbreakerGameModule)
+    if(MYTHBREAKER_BUILD_TESTS)
+        add_executable(MythbreakerEditorTests tests/editor_tests.cpp src/editor/Editor.cpp)
+        target_link_libraries(MythbreakerEditorTests PRIVATE MythbreakerCore MythbreakerPlatform MythbreakerImGui)
+        add_test(NAME editor_workflow COMMAND MythbreakerEditorTests)
+        add_executable(MythbreakerAssetTests tests/asset_import_tests.cpp)
+        target_link_libraries(MythbreakerAssetTests PRIVATE MythbreakerGraphics)
+        add_test(NAME asset_import COMMAND MythbreakerAssetTests "${CMAKE_CURRENT_SOURCE_DIR}")
+        add_executable(MythbreakerAudioTests tests/audio_tests.cpp)
+        target_link_libraries(MythbreakerAudioTests PRIVATE MythbreakerAudio)
+        add_test(NAME audio_lifecycle COMMAND MythbreakerAudioTests)
+    endif()
+    # Both applications share one output directory. One copy target avoids
+    # parallel copy races, and runs even when only shader sources changed.
+    add_custom_target(MythbreakerAssets
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_BINARY_DIR}/compiled_shaders" "$<TARGET_FILE_DIR:MythbreakerEditor>/shaders"
+        COMMAND "${CMAKE_COMMAND}" "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/examples/Sandbox" "-DDESTINATION=$<TARGET_FILE_DIR:MythbreakerEditor>/projects/Sandbox" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CopyStarterProject.cmake"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" "${CMAKE_CURRENT_SOURCE_DIR}/THIRD_PARTY_NOTICES.md" "$<TARGET_FILE_DIR:MythbreakerEditor>"
+        DEPENDS MythbreakerShaders
+        VERBATIM)
+    foreach(APP MythbreakerEditor MythbreakerRuntime)
+        add_dependencies(${APP} MythbreakerAssets)
+        set_target_properties(${APP} PROPERTIES INSTALL_RPATH "$ORIGIN" BUILD_RPATH "$ORIGIN")
+        install(TARGETS ${APP} RUNTIME DESTINATION .)
+    endforeach()
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/compiled_shaders/" DESTINATION shaders)
+    install(DIRECTORY examples/Sandbox DESTINATION projects)
+endif()
 
+if(MYTHBREAKER_BUILD_LEGACY_DEMO)
+    file(GLOB LEGACY_ENGINE_SOURCES CONFIGURE_DEPENDS src/engine/*.cpp src/engine/vulkan/*.cpp)
+    add_executable(MythbreakerRPG examples/rpg/main.cpp ${LEGACY_ENGINE_SOURCES})
+    target_include_directories(MythbreakerRPG PRIVATE src third_party/glm/glm third_party/vma third_party/stb third_party/tinygltf third_party/nlohmann third_party/tinyobjloader)
+    target_link_libraries(MythbreakerRPG PRIVATE Vulkan::Vulkan glfw Threads::Threads ${CMAKE_DL_LIBS})
+    target_compile_definitions(MythbreakerRPG PRIVATE NOMINMAX GLFW_INCLUDE_NONE)
+    add_dependencies(MythbreakerRPG MythbreakerShaders)
+    add_custom_command(TARGET MythbreakerRPG POST_BUILD COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_BINARY_DIR}/compiled_shaders" "$<TARGET_FILE_DIR:MythbreakerRPG>/shaders" COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:MythbreakerRPG>/assets" VERBATIM)
+endif()
+install(TARGETS MythbreakerCLI RUNTIME DESTINATION .)
+install(FILES README.md LICENSE THIRD_PARTY_NOTICES.md DESTINATION .)
+install(DIRECTORY docs DESTINATION .)
 
-
-
-
+# MinGW compiler runtimes are not Windows system DLLs. Copy them beside every
+# application so a packaged player can run on a machine without that compiler.
+if(MINGW)
+    foreach(DLL libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll)
+        execute_process(COMMAND "${CMAKE_CXX_COMPILER}" "-print-file-name=${DLL}"
+            OUTPUT_VARIABLE DLL_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(EXISTS "${DLL_PATH}")
+            list(APPEND MYTHBREAKER_COMPILER_DLLS "${DLL_PATH}")
+        else()
+            message(WARNING "MinGW runtime ${DLL} not found; provide it beside packaged executables.")
+        endif()
+    endforeach()
+    if(MYTHBREAKER_COMPILER_DLLS)
+        add_custom_target(MythbreakerCompilerRuntime
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:MythbreakerCLI>"
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${MYTHBREAKER_COMPILER_DLLS} "$<TARGET_FILE_DIR:MythbreakerCLI>" VERBATIM)
+        foreach(APP MythbreakerCLI MythbreakerEditor MythbreakerRuntime)
+            if(TARGET ${APP})
+                add_dependencies(${APP} MythbreakerCompilerRuntime)
+            endif()
+        endforeach()
+        install(FILES ${MYTHBREAKER_COMPILER_DLLS} DESTINATION .)
+    endif()
+endif()

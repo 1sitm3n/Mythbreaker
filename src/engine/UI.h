@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
+#include <cstring>
 #include <vector>
 #include <string>
 

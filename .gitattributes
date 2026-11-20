@@ -1,0 +1,2 @@
+# Keep upstream dependencies recognizable in reviews and preserve their formatting.
+third_party/** linguist-vendored -whitespace
