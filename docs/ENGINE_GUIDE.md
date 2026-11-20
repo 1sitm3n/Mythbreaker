@@ -384,7 +384,7 @@ Do not use project export as a replacement for backups or source control. Existi
 
 CMake compiles engine shaders with `glslc` or `glslangValidator` and copies them beside the applications. An old manually compiled shader directory is not needed. Build in a fresh `out/` directory rather than reusing a cache made on another machine or with another generator.
 
-The [Engine builds workflow](../.github/workflows/engine.yml) configures Linux desktop/Vulkan smoke checks, Windows MSVC builds and tests, and a headless CLI workflow. Successful desktop jobs upload installable engine directories as GitHub Actions artifacts. Consult each workflow run for its actual result.
+The [Engine builds workflow](../.github/workflows/engine.yml) configures Linux desktop/Vulkan smoke checks, Windows MSVC builds and tests, and a headless CLI workflow. Successful desktop jobs upload engine bundles as GitHub Actions artifacts. Extract the Windows artifact and run `MythbreakerEditor.exe`. The Linux artifact contains `Mythbreaker-linux-x64.tar.gz`; extract that archive with `tar -xzf Mythbreaker-linux-x64.tar.gz` to retain executable permissions, then run `Mythbreaker-linux/MythbreakerEditor`. Consult each workflow run for its actual result.
 
 Run checks with:
 

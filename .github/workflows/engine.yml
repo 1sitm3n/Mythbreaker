@@ -2,12 +2,16 @@ name: Engine builds
 
 on:
   push:
-    branches: [main, 'codex/**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: engine-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   linux:
@@ -37,10 +41,12 @@ jobs:
           dist/Mythbreaker-linux/MythbreakerCLI package dist/Mythbreaker-linux/projects/Sandbox dist/Example-game
           cd /tmp
           xvfb-run -a "$GITHUB_WORKSPACE/dist/Example-game/Launch.sh" --frames 20 --audio-null
+      - name: Preserve executable permissions in the Linux download
+        run: tar -czf Mythbreaker-linux-x64.tar.gz -C dist Mythbreaker-linux
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Mythbreaker-linux
-          path: dist/Mythbreaker-linux
+          path: Mythbreaker-linux-x64.tar.gz
 
   windows:
     runs-on: windows-2022
